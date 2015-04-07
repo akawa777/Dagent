@@ -4,7 +4,7 @@ Simple microORM for .NET.
 Works with SQL Server, MySQL, and SQLite.
 ## Simple Code
 Data manipulation is possible with a simple code.
-(Checkout the [Wiki](Wiki) for more documentation.)
+(Checkout the [Wiki](https://github.com/akawa777/Dagent/wiki) for more documentation.)
 ### Select
 ```cs
 public class Customer
