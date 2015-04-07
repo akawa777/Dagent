@@ -1,0 +1,822 @@
+﻿using System;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Linq;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.Entity;
+using System.Data.EntityClient;
+using System.Linq.Expressions;
+using Dagent.Models;
+
+namespace Dagent.Tests
+{
+    public class Customer
+    {
+        public Customer()
+        {
+            this.CustomerPurchases = new List<CustomerPurchase>();
+        }
+
+        public int customerId { get; set; }
+        public string name { get; set; }
+        public int businessId { get; set; }        
+
+        public List<CustomerPurchase> CustomerPurchases { get; set; }
+    }
+
+    public class CustomerWithNullableId
+    {
+        public int? customerId { get; set; }
+        public string name { get; set; }     
+    }
+
+    public class CustomerWithBusiness : Customer
+    {        
+        public Business Business { get; set; }
+    }
+
+    public class Business
+    {
+        public int businessId { get; set;  }
+        public string businessName { get; set; }
+    }
+
+    public class CustomerPurchase
+    {
+        public int customerId { get; set; }
+        public int no { get; set; }
+        public string content { get; set; }        
+    }    
+
+    [TestClass]
+    public class SQLiteTest
+    {
+        [TestMethod]
+        public void GetStarted()
+        {            
+            IDagentDatabase database = new DagentDatabase("SQLite");
+            
+            Customer customer = database.Query<Customer>("customers", new { customerId = 1 }).Single();
+
+            Assert.AreEqual(1, customer.customerId);
+
+            List<Customer> customers = database.Query<Customer>("customers").Fetch();
+
+            Assert.AreEqual(10000, customers.Count);
+
+            customers = database.Query<Customer>("select * from customers where customerId > @customerId", new { customerId = 1000 }).Fetch();
+
+            Assert.AreEqual(9000, customers.Count);
+
+            int maxId = database.Query<Customer>("select max(customerId) from customers").Scalar<int>();
+
+            customer = new Customer { customerId = maxId + 1, name = "getStarted" };
+
+            int rtn = database.Command<Customer>("customers", "customerId").Insert(customer);
+
+            Assert.AreEqual(1, rtn);
+
+            rtn = database.Command<Customer>("customers", "customerId").Update(customer);
+
+            Assert.AreEqual(1, rtn);            
+
+            rtn = database.Command<Customer>("customers", "customerId").Delete(customer);
+
+            Assert.AreEqual(1, rtn);
+        }
+
+        [TestMethod]
+        public void FetchEach()
+        {
+            IDagentDatabase database = new DagentDatabase("SQLite");
+
+            List<Customer> customers = database.Query<Customer>(@"
+                        select 
+                            *
+                        from 
+                            customers c 
+                        inner join 
+                            customerPurchases cp 
+                        on 
+                            c.customerId = cp.customerId                 
+        	            order by 
+                            c.customerId, cp.no")
+                .Each((model, row, state) =>
+                {
+                    CustomerPurchase customerPurchaseModel = new CustomerPurchase
+                    {
+                        customerId = model.customerId,
+                        no = row.Get<int>("no"),
+                        content = row.Get<string>("content")
+                    };
+
+                    model.CustomerPurchases.Add(customerPurchaseModel);
+
+                    state.RequestNewModel = nextRow => nextRow.Get<int>("customerId") != row.Get<int>("customerId");
+                })
+                .Fetch();
+
+            ValidFetch(customers);
+        }
+
+        [TestMethod]
+        public void Fetch()
+        {
+            IDagentDatabase database = new DagentDatabase("SQLite");            
+            List<Customer> customers = database.Query<Customer>(@"
+                select 
+                    *
+                from 
+                    customers c                 
+                inner join 
+                    customerPurchases cp 
+                on 
+                    c.customerId = cp.customerId                 
+	            order by 
+                    c.customerId, cp.no")
+                .Unique("customerId")                
+                .Each((model, row, state) => model.CustomerPurchases.Add(row.Map<CustomerPurchase>()))                
+                .Fetch();
+
+            ValidFetch(customers);            
+        }
+
+        [TestMethod]
+        public void FetchForOneToOne()
+        {
+            IDagentDatabase database = new DagentDatabase("SQLite");
+            List<CustomerWithBusiness> customers = database.Query<CustomerWithBusiness>(@"
+                select 
+                    *
+                from 
+                    customers c 
+                inner join
+                    business b
+                on
+                    c.businessId = b.businessId
+                inner join 
+                    customerPurchases cp 
+                on 
+                    c.customerId = cp.customerId                 
+	            order by 
+                    c.customerId, cp.no")
+                .Unique("customerId")                
+                .Each((model, row, state) =>
+                {   
+                    model.Business = row.Map<Business>();
+                    model.CustomerPurchases.Add(row.Map<CustomerPurchase>());
+                })
+                .Fetch();
+
+            ValidFetch(customers);
+        }
+
+        [TestMethod]
+        public void FetchForOneToOneByTextBuilder()
+        {
+            TextBuilder textBuilder = new TextBuilder(@"
+                select 
+                    *
+                from 
+                    customers c");
+
+            textBuilder.Append(@"
+                inner join
+                    {{join}}
+                on
+                    c.businessId = b.businessId", 
+                new { join = "business b" });
+
+            textBuilder.Append(@"
+                inner join 
+                    customerPurchases cp 
+                on 
+                    {{on}}
+	            order by 
+                    {{order}}",
+                new { on = "c.customerId = cp.customerId", order = "c.customerId, cp.no" });
+
+            string sql = textBuilder.Generate();
+
+            IDagentDatabase database = new DagentDatabase("SQLite");
+            List<CustomerWithBusiness> customers = database.Query<CustomerWithBusiness>(sql)
+                .Unique("customerId")
+                .Each((model, row, state) =>
+                {
+                    model.Business = row.Map<Business>();
+                    model.CustomerPurchases.Add(row.Map<CustomerPurchase>());
+                })
+                .Fetch();
+
+            ValidFetch(customers);
+
+            sql = textBuilder.Clear().Generate();
+
+            Assert.AreEqual("", sql);
+        }
+
+        private void ValidFetch<T>(IEnumerable<T> customers) where T : Customer
+        {
+            Assert.AreEqual(10000, customers.Count());
+
+            foreach (var customer in customers)
+            {
+                Assert.AreEqual(true, customer.customerId != 0);
+                Assert.AreEqual(false, string.IsNullOrEmpty(customer.name));
+
+                Assert.AreEqual(10, customer.CustomerPurchases.Count);
+
+                foreach (var purchase in customer.CustomerPurchases)
+                {
+                    Assert.AreEqual(customer.customerId, purchase.customerId);
+                    Assert.AreEqual(false, string.IsNullOrEmpty(purchase.content));
+                }
+            }
+        }
+
+        [TestMethod]
+        public void Nullable()
+        {
+            IDagentDatabase database = new DagentDatabase("SQLite");
+
+            CustomerWithNullableId customer = database.Query<CustomerWithNullableId>("customers", new { customerId = 1 }).Single();
+
+            Assert.AreEqual(new Nullable<int>(1), customer.customerId);
+        }
+
+        [TestMethod]
+        public void FetchNotAutoMapping()
+        {
+            IDagentDatabase database = new DagentDatabase("SQLite");
+
+            List<CustomerWithBusiness> customers = database.Query<CustomerWithBusiness>(@"
+                    select 
+                        *
+                    from 
+                        customers c 
+                    inner join
+                        business b
+                    on
+                        c.businessId = b.businessId
+                    inner join 
+                        customerPurchases cp 
+                    on 
+                        c.customerId = cp.customerId                 
+        	        order by 
+                        c.customerId, cp.no")
+                .AutoMapping(false)
+                .Each((model, row, state) => 
+                {                    
+                    model.customerId = row.Get<int>("customerId");
+                    model.name = row.Get<string>("name");
+
+                    model.Business = new Business
+                    {
+                        businessId = row.Get<int>("businessId"),
+                        businessName = row.Get<string>("businessName")
+                    };
+
+                    CustomerPurchase customerPurchaseModel = new CustomerPurchase
+                    {
+                        customerId = model.customerId,
+                        no = row.Get<int>("no"),
+                        content = row.Get<string>("content")
+                    };
+
+                    model.CustomerPurchases.Add(customerPurchaseModel);
+
+                    state.RequestNewModel = nextRow => nextRow.Get<int>("customerId") != row.Get<int>("customerId");
+                })
+                .Fetch();
+
+            ValidFetch(customers);
+        }
+
+        [TestMethod]
+        public void FetchIgnorePropertiesCache()
+        {
+            IDagentDatabase database = new DagentDatabase("SQLite");
+
+            Expression<Func<CustomerPurchase, object>> ignoreProperty = x => x.content;
+
+            List<Customer> customers = database.Query<Customer>(@"
+                        select 
+                            *
+                        from 
+                            customers c 
+                        inner join 
+                            customerPurchases cp 
+                        on 
+                            c.customerId = cp.customerId                 
+        	            order by 
+                            c.customerId, cp.no")
+                .Unique("customerId")
+                .IgnoreProperties(x => x.name)             
+                .Each((model, row, state) => model.CustomerPurchases.Add(row.Map<CustomerPurchase>(ignoreProperty)))
+                .Fetch();
+
+            foreach (var customer in customers)
+            {
+                Assert.AreEqual(null, customer.name);
+
+                foreach (var customerPurchase in customer.CustomerPurchases)
+                {
+                    Assert.AreEqual(null, customerPurchase.content);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void FetchIgnoreProperties()
+        {
+            IDagentDatabase database = new DagentDatabase("SQLite");            
+
+            List<Customer> customers = database.Query<Customer>(@"
+                        select 
+                            *
+                        from 
+                            customers c 
+                        inner join 
+                            customerPurchases cp 
+                        on 
+                            c.customerId = cp.customerId                 
+        	            order by 
+                            c.customerId, cp.no")
+                .Unique("customerId")
+                .IgnoreProperties(x => x.name)
+                .Each((model, row, state) => model.CustomerPurchases.Add(row.Map<CustomerPurchase>(x => x.content)))                
+                .Fetch();
+
+            foreach (var customer in customers)
+            {
+                Assert.AreEqual(null, customer.name);
+
+                foreach (var customerPurchase in customer.CustomerPurchases)
+                {
+                    Assert.AreEqual(null, customerPurchase.content);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void FetchParameterObject()
+        {
+            IDagentDatabase database = new DagentDatabase("SQLite");
+
+            List<Customer> customers = database.Query<Customer>(@"
+                select 
+                    *
+                from 
+                    customers c 
+                inner join 
+                    customerPurchases cp 
+                on 
+                    c.customerId = cp.customerId  
+                where c.customerId between @fromId and @toId
+	            order by 
+                    c.customerId, cp.no", new { fromId = 1000, toId = 1999 })
+                .Unique("customerId")
+                .Each((model, row, state) => model.CustomerPurchases.Add(row.Map<CustomerPurchase>()))
+                .Fetch();
+
+            ValidBetweenParameter(customers);            
+        }
+
+        public void ValidBetweenParameter(List<Customer> customers)
+        {
+            Assert.AreEqual(1000, customers.Count);
+            Assert.AreEqual(1000, customers.First().customerId);
+            Assert.AreEqual(1999, customers.Last().customerId);
+
+            foreach (var customer in customers)
+            {
+                Assert.AreEqual(true, customer.customerId != 0);
+                Assert.AreEqual(false, string.IsNullOrEmpty(customer.name));
+
+                Assert.AreEqual(10, customer.CustomerPurchases.Count);
+
+                foreach (var purchase in customer.CustomerPurchases)
+                {
+                    Assert.AreEqual(customer.customerId, purchase.customerId);
+                    Assert.AreEqual(false, string.IsNullOrEmpty(purchase.content));
+                }
+            }
+        }
+
+        [TestMethod]
+        public void FetchParameters()
+        {
+            IDagentDatabase database = new DagentDatabase("SQLite");
+
+            List<Customer> customers = database.Query<Customer>(@"
+                select 
+                    *
+                from 
+                    customers c 
+                inner join 
+                    customerPurchases cp 
+                on 
+                    c.customerId = cp.customerId  
+                where c.customerId between @fromId and @toId
+	            order by 
+                    c.customerId, cp.no", new Parameter("fromId", 1000), new Parameter("toId", 1999))
+                .Unique("customerId")
+                .Each((model, row, state) => model.CustomerPurchases.Add(row.Map<CustomerPurchase>()))
+                .Fetch();
+
+            ValidBetweenParameter(customers);             
+        }
+
+        [TestMethod]
+        public void FetchPrefixColumName()
+        {
+            IDagentDatabase database = new DagentDatabase("SQLite");
+
+            List<Customer> customers = database.Query<Customer>(@"
+                select 
+                    c.*,
+                    cp.customerId as cp_customerId,
+                    cp.no as cp_no,
+                    cp.content as cp_content
+                from 
+                    customers c 
+                inner join 
+                    customerPurchases cp 
+                on 
+                    c.customerId = cp.customerId                 
+	            order by 
+                    c.customerId, cp.no")
+                .Unique("customerId")
+                .Each((model, row, state) => model.CustomerPurchases.Add(row.Map<CustomerPurchase>("cp_")))
+                .Fetch();
+
+            ValidFetch(customers);
+        }
+
+        [TestMethod]
+        public void Single()
+        {
+            IDagentDatabase database = new DagentDatabase("SQLite");            
+
+            Customer customer = database.Query<Customer>(@"
+                select 
+                    *
+                from 
+                    customers c 
+                inner join 
+                    customerPurchases cp 
+                on 
+                    c.customerId = cp.customerId  
+                where c.customerId between @fromId and @toId
+	            order by 
+                    c.customerId, cp.no", new Parameter("fromId", 1000), new Parameter("toId", 1999))
+                .Unique("customerId")
+                .Each((model, row, state) => model.CustomerPurchases.Add(row.Map<CustomerPurchase>()))
+                .Single();
+
+            Assert.AreEqual(true, customer.customerId == 1000);
+            Assert.AreEqual(false, string.IsNullOrEmpty(customer.name));
+
+            foreach (var purchase in customer.CustomerPurchases)
+            {
+                Assert.AreEqual(customer.customerId, purchase.customerId);
+                Assert.AreEqual(false, string.IsNullOrEmpty(purchase.content));
+            }
+        }
+
+        [TestMethod]
+        public void Page()
+        {
+            IDagentDatabase database = new DagentDatabase("SQLite");
+
+            int count = 0;
+
+            List<Customer> customers = database.Query<Customer>(@"
+                select 
+                    c.*,
+                    cp.customerId as cp_customerId,
+                    cp.no as cp_no,
+                    cp.content as cp_content
+                from 
+                    customers c 
+                inner join 
+                    customerPurchases cp 
+                on 
+                    c.customerId = cp.customerId                 
+	            order by 
+                    c.customerId, cp.no")
+                .Unique("customerId")
+                .Each((model, row, state) => model.CustomerPurchases.Add(row.Map<CustomerPurchase>("cp_")))
+                .Page(100, 10, out count);
+
+            Assert.AreEqual(10, customers.Count);
+            Assert.AreEqual(10000, count);
+            Assert.AreEqual(991, customers.First().customerId);
+            Assert.AreEqual(1000, customers.Last().customerId);
+
+            foreach (var customer in customers)
+            {
+                foreach (var purchase in customer.CustomerPurchases)
+                {
+                    Assert.AreEqual(customer.customerId, purchase.customerId);
+                    Assert.AreEqual(false, string.IsNullOrEmpty(purchase.content));
+                }
+            }
+        }
+
+        [TestMethod]
+        public void InsertManyData()
+        {
+            IDagentDatabase database = new DagentDatabase("SQLite");            
+
+            using (ITransactionScope scope = database.TransactionScope())
+            {
+                database.ExequteNonQuery("delete from customers", null);
+                database.ExequteNonQuery("delete from customerPurchases", null);
+                database.ExequteNonQuery("delete from business", null);
+
+                int customerNo = 10000;
+                int customerPurchasesNo = 10;
+                int businessNo = 10;
+
+                //var customerCommand = database.Command<Customer>("customers", "customerId");
+                //var customerPurchaseCommand = database.Command<CustomerPurchase>("customerPurchases", "customerId", "no");
+                //var businessCommand = database.Command<Business>("business", "businesId");                
+
+                int businessId = 1;
+                for (int i = 1; i <= customerNo; i++)
+                {                    
+                    Customer customer = new Customer
+                    {
+                        customerId = i,
+                        name = "name_" + i.ToString(),
+                        businessId = businessId
+                    };
+                    database.Command<Customer>("customers", "customerId").Insert(customer);                    
+
+                    if (businessId == 10) businessId = 0;
+                    businessId++;
+
+
+                    for (int j = 1; j <= customerPurchasesNo; j++)
+                    {
+                        CustomerPurchase customerPurchase = new CustomerPurchase
+                        {
+                            customerId = i,
+                            no = j,
+                            content = "content_" + j.ToString()
+                        };
+                        database.Command<CustomerPurchase>("customerPurchases", "customerId", "no").Insert(customerPurchase);
+                    }
+                }
+
+                for (int i = 1; i <= businessNo; i++)
+                {
+                    Business business = new Business
+                    {
+                        businessId = i,
+                        businessName = "business_" + i.ToString()
+
+                    };
+                    database.Command<Business>("business", "businesId").Insert(business);
+                }
+
+                scope.Commit();
+            }
+
+            FetchForOneToOne();
+        }
+
+        [TestMethod]
+        public void Fill()
+        {
+            IDagentDatabase database = new DagentDatabase("SQLite");
+
+            DataTable dt = new DataTable();
+            database.Fill(dt, @"
+                select 
+                    *
+                from 
+                    customers c 
+                inner join 
+                    customerPurchases cp 
+                on 
+                    c.customerId = cp.customerId                 
+	            order by 
+                    c.customerId, cp.no");
+
+            List<Customer> customers = new List<Customer>();
+            int id = 0;
+            foreach (DataRow row in dt.Rows)
+            {
+                int currentId = int.Parse(row["customerId"].ToString());
+                if (currentId != id)
+                {
+                    customers.Add(new Customer { customerId = currentId, name = row["name"].ToString() });
+                }
+                customers.Last().CustomerPurchases.Add(new CustomerPurchase
+                {
+                    customerId = currentId,
+                    no = Convert.ToInt16(row["no"]),
+                    content = Convert.ToString(row["content"])                  
+                });
+
+                id = currentId;
+            }
+
+            ValidFetch(customers);
+        }
+
+        [TestMethod]
+        public void Update()
+        {
+            IDagentDatabase database = new DagentDatabase("SQLite");
+
+            string sql = @"
+                select 
+                    *
+                from 
+                    customers c 
+                inner join 
+                    customerPurchases cp 
+                on 
+                    c.customerId = cp.customerId                 
+	            order by 
+                    c.customerId, cp.no";
+
+            DataTable dt = new DataTable();
+
+            database.Fill(dt, sql);
+            database.Update(dt, sql);
+
+            Fill();
+        }
+
+        [TestMethod]
+        public void ExecuteReader()
+        {
+            IDagentDatabase database = new DagentDatabase("SQLite");
+
+            var command = database.Connection.CreateCommand();
+            command.CommandText = @"
+                select 
+                    *
+                from 
+                    customers c 
+                inner join 
+                    customerPurchases cp 
+                on 
+                    c.customerId = cp.customerId                 
+	            order by 
+                    c.customerId, cp.no";
+
+
+            command.Connection.Open();
+            var reader = command.ExecuteReader();
+
+            List<Customer> customers = new List<Customer>();
+            int id = 0;
+            while (reader.Read())
+            {
+                int currentId = int.Parse(reader["customerId"].ToString());
+                if (currentId != id)
+                {
+                    customers.Add(new Customer { customerId = currentId, name = reader["name"].ToString() });
+                }
+                customers.Last().CustomerPurchases.Add(new CustomerPurchase
+                {
+                    customerId = currentId,
+                    no = Convert.ToInt16(reader["no"]),
+                    content = Convert.ToString(reader["content"])                    
+                });
+
+                id = currentId;
+            }
+
+            command.Connection.Close();
+
+            ValidFetch(customers);
+        }
+
+        [TestMethod]
+        public void InsertOrUpdateOrDelete()
+        {
+            Customer customer = new Customer();
+            customer.customerId = 999999;
+            customer.name = "name_" + customer.customerId.ToString();
+
+            IDagentDatabase database = new DagentDatabase("SQLite");
+
+            ICommand<Customer> command = database.Command<Customer>("customers", "customerId");
+            int ret = command.Insert(customer);
+
+            Assert.AreEqual(1, ret);
+
+            IQuery<Customer> query = database.Query<Customer>("customers", new { customerId = customer.customerId });
+
+            Customer registerdCustomer = query.Single();
+
+            Assert.AreEqual(customer.customerId, registerdCustomer.customerId);
+            Assert.AreEqual(customer.name, registerdCustomer.name);
+
+            customer.name = "update_" + customer.name;
+
+            ret = command.Update(customer);
+
+            Assert.AreEqual(1, ret);
+
+            registerdCustomer = query.Single();
+
+            Assert.AreEqual(customer.customerId, registerdCustomer.customerId);
+            Assert.AreEqual(customer.name, registerdCustomer.name);
+
+            ret = command.AutoMapping(false).Map((row, model) => 
+            {
+                row["customerId"] = model.customerId;
+                row["name"] = model.name;
+                row["businessId"] = model.businessId;
+            })
+            .Update(customer);
+
+            Assert.AreEqual(1, ret);
+
+            registerdCustomer = query.Single();
+
+            Assert.AreEqual(customer.customerId, registerdCustomer.customerId);
+            Assert.AreEqual(customer.name, registerdCustomer.name);
+
+            ret = command.Delete(customer);
+
+            Assert.AreEqual(1, ret);
+
+            registerdCustomer = query.Single();
+            
+            Assert.AreEqual(null, registerdCustomer);            
+        }        
+
+        //[TestMethod]
+        public void RefreshTestData()
+        {
+            DagentDatabase database = new DagentDatabase("SQLite");
+
+            using (ITransactionScope scope = database.TransactionScope())
+            {
+                database.ExequteNonQuery("delete from customers", null);
+                database.ExequteNonQuery("delete from customerPurchases", null);
+                database.ExequteNonQuery("delete from business", null);
+
+                int customerNo = 10000;
+                int customerPurchasesNo = 10;
+                int businessNo = 10;
+
+                int businessId = 1;
+                for (int i = 1; i <= customerNo; i++)
+                {
+                    database.ExequteNonQuery(string.Format("insert into customers values ({0}, '{1}', '{2}')", i.ToString(), "name_" + i.ToString(), businessId));
+
+                    if (businessId == 10) businessId = 0;
+                    businessId++;
+
+
+                    for (int j = 1; j <= customerPurchasesNo; j++)
+                    {
+                        database.ExequteNonQuery(string.Format("insert into customerPurchases values ({0}, {1}, '{2}')", i.ToString(), j.ToString(), "content_" + j.ToString()));
+                    }
+                }
+
+                for (int i = 1; i <= businessNo; i++)
+                {
+                    database.ExequteNonQuery(string.Format("insert into business values ({0}, '{1}')", i.ToString(), "business_" + i.ToString()));
+                }
+
+                scope.Commit();
+            }
+        }
+
+        private bool refreshTestData = true;
+        
+        [TestInitialize]
+        public void Initialize()
+        {
+            if (!refreshTestData) return;
+
+            RefreshTestData();
+        }
+
+        [TestCleanup]
+        public void Cleanup()
+        {
+            if (!refreshTestData) return;
+
+            DagentDatabase database = new DagentDatabase("SQLite");
+
+            using (ITransactionScope scope = database.TransactionScope())
+            {
+                database.ExequteNonQuery("delete from customers", null);
+                database.ExequteNonQuery("delete from customerPurchases", null);
+
+                scope.Commit();
+            }
+        }
+    }
+}
