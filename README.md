@@ -4,6 +4,7 @@ Simple microORM for .NET.
 Works with SQL Server, MySQL, and SQLite.
 ## Simple Code
 Data manipulation is possible with a simple code.
+(Checkout the [Wiki](Wiki) for more documentation.)
 ### Select
 ```cs
 public class Customer
