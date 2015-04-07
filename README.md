@@ -46,3 +46,5 @@ The performance tests are same test as the [Dapper](https://github.com/StackExch
 
 ## Pure POCO
 Dagent Keep the POCO. Your class does not need to inherit something the Class or put the Attribute.
+## License
+The MIT License (MIT)
