@@ -27,9 +27,9 @@ namespace Dagent.Library
         {
             public PropertyInfo Property { get; set; }            
             public Action<T, object> Setter { get; set; }
-        }   
+        }
 
-        public static void Map(IRow dagentRow, T model, string prefix, params Expression<Func<T, object>>[] ignorePropertyExpressions)
+        public static bool Map(T model, IRow dagentRow, string prefix, params Expression<Func<T, object>>[] ignorePropertyExpressions)
         {
             Dictionary<string, MemberInfo> ignoreMemberMap = default(Dictionary<string, MemberInfo>);
             if (ignorePropertyExpressions != null && ignorePropertyExpressions.Length > 0)
@@ -37,6 +37,7 @@ namespace Dagent.Library
                 ignoreMemberMap = ExpressionParser.GetMemberInfoMap<T>(ignorePropertyExpressions);
             }
 
+            bool success = false;
             for (int i = 0; i < dagentRow.ColumnCount; i++)
             {
                 string columnName = dagentRow.GetColumnName(i);
@@ -64,10 +65,11 @@ namespace Dagent.Library
                 {
                     if (value.GetType() == typeof(DBNull) || value == null)
                     {                        
-                        setterDelegateSet.Setter(model, null);
+                        
                     }
                     else
                     {
+                        success = true;
                         if (Nullable.GetUnderlyingType(setterDelegateSet.Property.PropertyType) != null)
                         {
                             object baseValue = Convert.ChangeType(value, setterDelegateSet.Property.PropertyType.GetGenericArguments()[0]);
@@ -80,6 +82,8 @@ namespace Dagent.Library
                     }
                 }
             }
+
+            return success;
         }
 
         private static bool CanChangeType(object value, Type conversionType)

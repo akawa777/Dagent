@@ -17,7 +17,7 @@ using Dagent.Rows;
 
 namespace Dagent.Models
 {
-    internal class Query<T> : IQuery<T> where T : new()
+    internal class Query<T> : IQuery<T> where T : class, new()
     {
         public Query(IDagentKernel dagentKernel, string selectSql, params Parameter[] parameters)
         {
@@ -226,7 +226,7 @@ namespace Dagent.Models
         }
 
 
-        public virtual IQuery<T> Each(Action<T, ICurrentRow, IMappingState<T>> mapAction)
+        public virtual IQuery<T> ForEach(Action<T, ICurrentRow, IMappingState<T>> mapAction)
         {
             if (mapAction == null)
             {

@@ -12,11 +12,6 @@ namespace Dagent.Tests
 {
     public class Customer
     {
-        public Customer()
-        {
-            this.CustomerPurchases = new List<CustomerPurchase>();
-        }
-
         public int customerId { get; set; }
         public string name { get; set; }
         public int businessId { get; set; }        
@@ -101,7 +96,7 @@ namespace Dagent.Tests
                             c.customerId = cp.customerId                 
         	            order by 
                             c.customerId, cp.no")
-                .Each((model, row, state) =>
+                .ForEach((model, row, state) =>
                 {
                     CustomerPurchase customerPurchaseModel = new CustomerPurchase
                     {
@@ -109,6 +104,11 @@ namespace Dagent.Tests
                         no = row.Get<int>("no"),
                         content = row.Get<string>("content")
                     };
+
+                    if (model.CustomerPurchases == null)
+                    {
+                        model.CustomerPurchases = new List<CustomerPurchase>();
+                    }
 
                     model.CustomerPurchases.Add(customerPurchaseModel);
 
@@ -135,7 +135,7 @@ namespace Dagent.Tests
 	            order by 
                     c.customerId, cp.no")
                 .Unique("customerId")                
-                .Each((model, row, state) => model.CustomerPurchases.Add(row.Map<CustomerPurchase>()))                
+                .ForEach((model, row, state) => row.Map(model, x => x.CustomerPurchases))                
                 .Fetch();
 
             ValidFetch(customers);            
@@ -161,10 +161,10 @@ namespace Dagent.Tests
 	            order by 
                     c.customerId, cp.no")
                 .Unique("customerId")                
-                .Each((model, row, state) =>
-                {   
-                    model.Business = row.Map<Business>();
-                    model.CustomerPurchases.Add(row.Map<CustomerPurchase>());
+                .ForEach((model, row, state) =>
+                {
+                    row.Map(model, x => x.Business);
+                    row.Map(model, x => x.CustomerPurchases);                    
                 })
                 .Fetch();
 
@@ -201,10 +201,10 @@ namespace Dagent.Tests
             IDagentDatabase database = new DagentDatabase("SQLite");
             List<CustomerWithBusiness> customers = database.Query<CustomerWithBusiness>(sql)
                 .Unique("customerId")
-                .Each((model, row, state) =>
+                .ForEach((model, row, state) =>
                 {
-                    model.Business = row.Map<Business>();
-                    model.CustomerPurchases.Add(row.Map<CustomerPurchase>());
+                    row.Map(model, x => x.Business);
+                    row.Map(model, x => x.CustomerPurchases);                    
                 })
                 .Fetch();
 
@@ -265,7 +265,7 @@ namespace Dagent.Tests
         	        order by 
                         c.customerId, cp.no")
                 .AutoMapping(false)
-                .Each((model, row, state) => 
+                .ForEach((model, row, state) => 
                 {                    
                     model.customerId = row.Get<int>("customerId");
                     model.name = row.Get<string>("name");
@@ -282,6 +282,11 @@ namespace Dagent.Tests
                         no = row.Get<int>("no"),
                         content = row.Get<string>("content")
                     };
+
+                    if (model.CustomerPurchases == null)
+                    {
+                        model.CustomerPurchases = new List<CustomerPurchase>();
+                    }
 
                     model.CustomerPurchases.Add(customerPurchaseModel);
 
@@ -311,8 +316,8 @@ namespace Dagent.Tests
         	            order by 
                             c.customerId, cp.no")
                 .Unique("customerId")
-                .IgnoreProperties(x => x.name)             
-                .Each((model, row, state) => model.CustomerPurchases.Add(row.Map<CustomerPurchase>(ignoreProperty)))
+                .IgnoreProperties(x => x.name)
+                .ForEach((model, row, state) => row.Map(model, x => x.CustomerPurchases, ignoreProperty))
                 .Fetch();
 
             foreach (var customer in customers)
@@ -341,10 +346,10 @@ namespace Dagent.Tests
                         on 
                             c.customerId = cp.customerId                 
         	            order by 
-                            c.customerId, cp.no")
+                            c.customerId, cp.no")   
                 .Unique("customerId")
                 .IgnoreProperties(x => x.name)
-                .Each((model, row, state) => model.CustomerPurchases.Add(row.Map<CustomerPurchase>(x => x.content)))                
+                .ForEach((model, row, state) => row.Map(model, x => x.CustomerPurchases, x => x.content))
                 .Fetch();
 
             foreach (var customer in customers)
@@ -376,7 +381,7 @@ namespace Dagent.Tests
 	            order by 
                     c.customerId, cp.no", new { fromId = 1000, toId = 1999 })
                 .Unique("customerId")
-                .Each((model, row, state) => model.CustomerPurchases.Add(row.Map<CustomerPurchase>()))
+                .ForEach((model, row, state) => row.Map(model, x => x.CustomerPurchases))
                 .Fetch();
 
             ValidBetweenParameter(customers);            
@@ -421,7 +426,7 @@ namespace Dagent.Tests
 	            order by 
                     c.customerId, cp.no", new Parameter("fromId", 1000), new Parameter("toId", 1999))
                 .Unique("customerId")
-                .Each((model, row, state) => model.CustomerPurchases.Add(row.Map<CustomerPurchase>()))
+                .ForEach((model, row, state) => row.Map(model, x => x.CustomerPurchases))
                 .Fetch();
 
             ValidBetweenParameter(customers);             
@@ -447,7 +452,7 @@ namespace Dagent.Tests
 	            order by 
                     c.customerId, cp.no")
                 .Unique("customerId")
-                .Each((model, row, state) => model.CustomerPurchases.Add(row.Map<CustomerPurchase>("cp_")))
+                .ForEach((model, row, state) => row.Map(model, x => x.CustomerPurchases, "cp_"))
                 .Fetch();
 
             ValidFetch(customers);
@@ -471,7 +476,7 @@ namespace Dagent.Tests
 	            order by 
                     c.customerId, cp.no", new Parameter("fromId", 1000), new Parameter("toId", 1999))
                 .Unique("customerId")
-                .Each((model, row, state) => model.CustomerPurchases.Add(row.Map<CustomerPurchase>()))
+                .ForEach((model, row, state) => row.Map(model, x => x.CustomerPurchases))
                 .Single();
 
             Assert.AreEqual(true, customer.customerId == 1000);
@@ -506,7 +511,7 @@ namespace Dagent.Tests
 	            order by 
                     c.customerId, cp.no")
                 .Unique("customerId")
-                .Each((model, row, state) => model.CustomerPurchases.Add(row.Map<CustomerPurchase>("cp_")))
+                .ForEach((model, row, state) => row.Map(model, x => x.CustomerPurchases, "cp_"))
                 .Page(100, 10, out count);
 
             Assert.AreEqual(10, customers.Count);
@@ -610,10 +615,17 @@ namespace Dagent.Tests
             foreach (DataRow row in dt.Rows)
             {
                 int currentId = int.Parse(row["customerId"].ToString());
+
                 if (currentId != id)
                 {
                     customers.Add(new Customer { customerId = currentId, name = row["name"].ToString() });
                 }
+
+                if (customers.Last().CustomerPurchases == null)
+                {
+                    customers.Last().CustomerPurchases = new List<CustomerPurchase>();
+                }
+
                 customers.Last().CustomerPurchases.Add(new CustomerPurchase
                 {
                     customerId = currentId,
@@ -683,6 +695,12 @@ namespace Dagent.Tests
                 {
                     customers.Add(new Customer { customerId = currentId, name = reader["name"].ToString() });
                 }
+
+                if (customers.Last().CustomerPurchases == null)
+                {
+                    customers.Last().CustomerPurchases = new List<CustomerPurchase>();
+                }
+
                 customers.Last().CustomerPurchases.Add(new CustomerPurchase
                 {
                     customerId = currentId,

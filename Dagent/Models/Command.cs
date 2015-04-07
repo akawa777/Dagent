@@ -16,7 +16,7 @@ using Dagent.Kernels;
 namespace Dagent.Models
 {
     internal class Command<T> : ICommand<T>
-        where T : new()
+        where T : class, new()
     {
         public Command(IDagentKernel dagentKernel, string tableName, params string[] primaryKeys)
         {

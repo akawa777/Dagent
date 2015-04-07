@@ -96,17 +96,17 @@ namespace Dagent
             }
         }
 
-        public virtual IQuery<T> Query<T>(string tableNameOrSelectSql) where T : new()
+        public virtual IQuery<T> Query<T>(string tableNameOrSelectSql) where T : class, new()
         {
             return Query<T>(tableNameOrSelectSql, null);
         }
 
-        public virtual IQuery<T> Query<T>(string tableNameOrSelectSql, object parameters) where T : new()
+        public virtual IQuery<T> Query<T>(string tableNameOrSelectSql, object parameters) where T : class, new()
         {   
             return Query<T>(tableNameOrSelectSql, ParameterConverter.GetParameters(parameters));
         }
 
-        public virtual IQuery<T> Query<T>(string tableNameOrSelectSql, params Parameter[] parameters) where T : new()
+        public virtual IQuery<T> Query<T>(string tableNameOrSelectSql, params Parameter[] parameters) where T : class, new()
         {
             string selectSql = null;
             
@@ -125,7 +125,7 @@ namespace Dagent
             return dagentQuery;
         }
 
-        public virtual ICommand<T> Command<T>(string tableName, params string[] primaryKeys) where T : new()
+        public virtual ICommand<T> Command<T>(string tableName, params string[] primaryKeys) where T : class, new()
         {
             Command<T> dagentCommand = new Command<T>(dagentKernel, tableName, primaryKeys);
 

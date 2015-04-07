@@ -70,5 +70,35 @@ namespace Dagent.Library
                 return null;
             }
         }
+
+        public static MemberInfo GetMemberInfo<T, P>(Expression<Func<T, P>> expression)
+        {
+            MemberExpression memberExpression = null;
+
+            if (memberExpressionInfoCache.TryGetValue(expression.ToString(), out memberExpression))
+            {
+                return memberExpression.Member;
+            }
+
+            if (expression.Body.NodeType == ExpressionType.MemberAccess)
+            {
+                memberExpression = (MemberExpression)expression.Body;
+                memberExpressionInfoCache[expression.ToString()] = memberExpression;
+            }
+            else if (expression.Body.NodeType == ExpressionType.Convert)
+            {
+                UnaryExpression unaryExpression = (UnaryExpression)expression.Body;
+                memberExpression = (MemberExpression)unaryExpression.Operand;
+            }
+
+            if (memberExpression != null)
+            {
+                return memberExpression.Member;
+            }
+            else
+            {
+                return null;
+            }
+        }
     }
 }

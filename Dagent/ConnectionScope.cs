@@ -28,7 +28,6 @@ namespace Dagent
         protected DbConnection connection;
         protected bool hasConnectionOpened = false;
 
-
         public virtual void Dispose()
         {
             BeginClose();

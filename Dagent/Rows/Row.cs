@@ -12,7 +12,7 @@ using System.Data;
 namespace Dagent.Rows
 {
 
-    public abstract class Row : IRow, IRowDiffer, IRowMapper
+    public abstract class Row : IRow, IRowDiffer, IRowPropertyMapper
     {
         public Row(Row row)
         {
@@ -150,6 +150,11 @@ namespace Dagent.Rows
             }
         }
 
+        public bool ContainsColumn(string columnName)
+        {
+            return valueMap.ContainsKey(columnName);
+        }
+
         public bool Compare(IRow dagentRow, params string[] columnNames)
         {
             int[] indexes = new int[columnNames.Length];
@@ -183,33 +188,107 @@ namespace Dagent.Rows
             return false;
         }
 
-        public T Map<T>(string prefix, params Expression<Func<T, object>>[] ignorePropertyExpressions) where T : new()
+        public T Map<T>(string prefix, params Expression<Func<T, object>>[] ignorePropertyExpressions) where T : class, new()
         {
             T model = new T();
 
-            ModelMapper<T>.Map(this, model, prefix, ignorePropertyExpressions);
+            bool success = ModelMapper<T>.Map(model, this, prefix, ignorePropertyExpressions);
 
-            return model;
+            if (success)
+            {
+                return model;
+            }
+            else
+            {
+                return null;
+            }
         }
 
-        public T Map<T>(string prefix) where T : new()
+        public T Map<T>(string prefix) where T : class, new()
         {
             return Map<T>(prefix, null);
         }
 
-        public T Map<T>(params Expression<Func<T, object>>[] ignorePropertyExpressions) where T : new()
+        public T Map<T>(params Expression<Func<T, object>>[] ignorePropertyExpressions) where T : class, new()
         {
-            return Map<T>(null, ignorePropertyExpressions);
+            return Map<T>(string.Empty, ignorePropertyExpressions);
         }
 
-        public T Map<T>() where T : new()
+        public T Map<T>() where T : class, new()
         {
-            return Map<T>(null, new Expression<Func<T, object>>[0]);
+            return Map<T>(string.Empty, new Expression<Func<T, object>>[0]);
         }
 
-        public bool ContainsColumn(string columnName)
+
+        public void Map<T, P>(T model, Expression<Func<T, P>> targetPropertyExpression, string prefix, params Expression<Func<P, object>>[] ignorePropertyExpressions) where T : class, new() where P : class, new()
         {
-            return valueMap.ContainsKey(columnName);
+            P value = this.Map<P>(prefix, ignorePropertyExpressions);
+
+            if (value == null) return;
+
+            PropertyInfo property = ExpressionParser.GetMemberInfo(targetPropertyExpression) as PropertyInfo;
+
+            DynamicMethodBuilder<T>.CreateSetMethod(property)(model, value);
+        }
+
+        public void Map<T, P>(T model, Expression<Func<T, P>> targetPropertyExpression, string prefix)
+            where T : class, new()
+            where P : class, new()
+        {
+            this.Map(model, targetPropertyExpression, prefix, new Expression<Func<P, object>>[0]);
+        }
+
+        public void Map<T, P>(T model, Expression<Func<T, P>> targetPropertyExpression, params Expression<Func<P, object>>[] ignorePropertyExpressions)
+            where T : class, new()
+            where P : class, new()
+        {
+            this.Map(model, targetPropertyExpression, string.Empty, new Expression<Func<P, object>>[0]);
+        }
+
+        public void Map<T, P>(T model, Expression<Func<T, P>> targetPropertyExpression)
+            where T : class, new()
+            where P : class, new()
+        {
+            this.Map(model, targetPropertyExpression, string.Empty, new Expression<Func<P, object>>[0]);
+        }
+
+        public void Map<T, P>(T model, Expression<Func<T, List<P>>> targetPropertyExpression, string prefix, params Expression<Func<P, object>>[] ignorePropertyExpressions)
+            where T : class, new()
+            where P : class, new()
+        {
+            PropertyInfo property = ExpressionParser.GetMemberInfo(targetPropertyExpression) as PropertyInfo;
+
+            if (DynamicMethodBuilder<T>.CreateGetMethod(property)(model) == null)
+            {
+                DynamicMethodBuilder<T>.CreateSetMethod(property)(model, Activator.CreateInstance(property.PropertyType));
+            }
+
+            P value = this.Map<P>(prefix, ignorePropertyExpressions);
+
+            if (value == null) return;
+
+            (DynamicMethodBuilder<T>.CreateGetMethod(property)(model) as List<P>).Add(value);
+        }
+
+        public void Map<T, P>(T model, Expression<Func<T, List<P>>> targetPropertyExpression, string prefix)
+            where T : class, new()
+            where P : class, new()
+        {
+            this.Map(model, targetPropertyExpression, prefix, new Expression<Func<P, object>>[0]);
+        }
+
+        public void Map<T, P>(T model, Expression<Func<T, List<P>>> targetPropertyExpression, params Expression<Func<P, object>>[] ignorePropertyExpressions)
+            where T : class, new()
+            where P : class, new()
+        {
+            this.Map(model, targetPropertyExpression, string.Empty, ignorePropertyExpressions);
+        }
+
+        public void Map<T, P>(T model, Expression<Func<T, List<P>>> targetPropertyExpression)
+            where T : class, new()
+            where P : class, new()
+        {
+            this.Map(model, targetPropertyExpression, string.Empty, new Expression<Func<P, object>>[0]);
         }
     }
 }

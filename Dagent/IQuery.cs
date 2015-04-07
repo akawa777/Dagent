@@ -10,7 +10,7 @@ using Dagent.Rows;
 
 namespace Dagent
 {
-    public interface IQuery<T> where T : new()
+    public interface IQuery<T> where T : class, new()
     {
         T Single();
         List<T> Fetch();        
@@ -21,7 +21,7 @@ namespace Dagent
         IQuery<T> Unique(params string[] columnNames);
         IQuery<T> Parameters(params Parameter[] parameters);
         IQuery<T> Parameters(object parameters);
-        IQuery<T> Each(Action<T, ICurrentRow, IMappingState<T>> mapAction);
+        IQuery<T> ForEach(Action<T, ICurrentRow, IMappingState<T>> mapAction);
         IQuery<T> AutoMapping(bool autoMapping);
         IQuery<T> IgnoreProperties(params Expression<Func<T, object>>[] ignorePropertyExpressions);
     }

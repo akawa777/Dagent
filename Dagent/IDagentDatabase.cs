@@ -16,11 +16,11 @@ namespace Dagent
         object ExequteScalar(string sql, params Parameter[] parameters);
         int Fill(DataTable dataTable, string selectSql, params Parameter[] parameters);
         int Update(DataTable dataTable, string selectSql, params Parameter[] parameters);
-        
-        IQuery<T> Query<T>(string tableNameOrSelectSql, params Parameter[] parameters) where T : new();
-        IQuery<T> Query<T>(string tableNameOrSelectSql, object parameters) where T : new();
-        
-        ICommand<T> Command<T>(string tableName, params string[] primaryKeys) where T : new();
+
+        IQuery<T> Query<T>(string tableNameOrSelectSql, params Parameter[] parameters) where T : class, new();
+        IQuery<T> Query<T>(string tableNameOrSelectSql, object parameters) where T : class, new();
+
+        ICommand<T> Command<T>(string tableName, params string[] primaryKeys) where T : class, new();
 
         IConnectionScope ConnectionScope();
         ITransactionScope TransactionScope();
