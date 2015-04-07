@@ -19,9 +19,9 @@ namespace Dagent
             dagentKernel = dagentKernelFactory.CreateKernel();            
         }
 
-        public DagentDatabase(string name)
-        {         
-            dagentKernel = dagentKernelFactory.CreateKernel(name);            
+        public DagentDatabase(string connectionStringName)
+        {
+            dagentKernel = dagentKernelFactory.CreateKernel(connectionStringName);            
         }
 
         public DagentDatabase(string connectionString, string providerName)
@@ -29,9 +29,9 @@ namespace Dagent
             dagentKernel = dagentKernelFactory.CreateKernel(connectionString, providerName);            
         }
 
-        public DagentDatabase(string name, string connectionString, string providerName)
-        {         
-            dagentKernel = dagentKernelFactory.CreateKernel(name, connectionString, providerName);            
+        public DagentDatabase(string connectionStringName, string connectionString, string providerName)
+        {
+            dagentKernel = dagentKernelFactory.CreateKernel(connectionStringName, connectionString, providerName);            
         }
 
         private IDagentKernel dagentKernel;

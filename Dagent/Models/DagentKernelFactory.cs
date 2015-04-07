@@ -19,9 +19,9 @@ namespace Dagent.Models
             return CreateKernel(connectionStringSettings);
         }
 
-        public virtual IDagentKernel CreateKernel(string name)
+        public virtual IDagentKernel CreateKernel(string connectionStringName)
         {
-            ConnectionStringSettings connectionStringSettings = ConfigurationManager.ConnectionStrings[name];
+            ConnectionStringSettings connectionStringSettings = ConfigurationManager.ConnectionStrings[connectionStringName];
 
             return CreateKernel(connectionStringSettings);
         }
@@ -31,9 +31,9 @@ namespace Dagent.Models
             return CreateKernel(string.Empty, connectionString, providerName);
         }
 
-        public virtual IDagentKernel CreateKernel(string name, string connectionString, string providerName)
+        public virtual IDagentKernel CreateKernel(string connectionStringName, string connectionString, string providerName)
         {
-            ConnectionStringSettings connectionStringSettings = new ConnectionStringSettings(name, connectionString, providerName);
+            ConnectionStringSettings connectionStringSettings = new ConnectionStringSettings(connectionStringName, connectionString, providerName);
 
             return CreateKernel(connectionStringSettings);
         }
