@@ -46,6 +46,6 @@ The performance tests are same test as the [Dapper](https://github.com/StackExch
 |Entity framework ExecuteStoreQuery|631ms|
 
 ## Pure POCO
-Dagent Keep the POCO. Your class does not need to inherit something the Class or put the Attribute.
+Dagent Keep the POCO. Your class does not need to inherit something the Class, SQL or put the Attribute.
 ## License
 The MIT License (MIT)
