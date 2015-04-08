@@ -10,7 +10,7 @@ using System.Data.Common;
 
 namespace Dagent.Rows
 {
-    public interface IRow
+    public interface IRow : IBaseRow
     {
         int ColumnCount { get; }
 
@@ -18,18 +18,12 @@ namespace Dagent.Rows
 
         string GetColumnName(int i);
 
-        int GetOrdinal(string columnName);
-
-        bool ContainsColumn(string columnName);
-
-        T Get<T>(string columnName);        
-
-        object this[string columnName] { get; set; }        
+        int GetOrdinal(string columnName);        
 
         object this[int i] { get; set; }
 
-        object[] Values { get; }
+        IRow PrevRow { get; set; }
 
-        string[] ColumnNames { get; }
+        void SetValue(object[] values);
     }
 }

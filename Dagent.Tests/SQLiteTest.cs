@@ -32,7 +32,7 @@ namespace Dagent.Tests
 
     public class Business
     {
-        public int businessId { get; set;  }
+        public int businessId { get; set; }
         public string businessName { get; set; }
     }
 
@@ -40,8 +40,10 @@ namespace Dagent.Tests
     {
         public int customerId { get; set; }
         public int no { get; set; }
-        public string content { get; set; }        
-    }    
+        public string content { get; set; }
+
+        public Business Business { get; set; } 
+    }
 
     [TestClass]
     public class SQLiteTest
@@ -96,6 +98,7 @@ namespace Dagent.Tests
                             c.customerId = cp.customerId                 
         	            order by 
                             c.customerId, cp.no")
+                .Unique("customerId") 
                 .ForEach((model, row, state) =>
                 {
                     CustomerPurchase customerPurchaseModel = new CustomerPurchase
@@ -111,8 +114,6 @@ namespace Dagent.Tests
                     }
 
                     model.CustomerPurchases.Add(customerPurchaseModel);
-
-                    state.RequestNewModel = nextRow => nextRow.Get<int>("customerId") != row.Get<int>("customerId");
                 })
                 .Fetch();
 
@@ -134,8 +135,10 @@ namespace Dagent.Tests
                     c.customerId = cp.customerId                 
 	            order by 
                     c.customerId, cp.no")
-                .Unique("customerId")                
-                .ForEach((model, row, state) => row.Map(model, x => x.CustomerPurchases))                
+                .Unique("customerId")                                
+                .ForEach((model, row, state) => {
+                    row.MapList(model, x => x.CustomerPurchases).Do();
+                })                
                 .Fetch();
 
             ValidFetch(customers);            
@@ -161,10 +164,9 @@ namespace Dagent.Tests
 	            order by 
                     c.customerId, cp.no")
                 .Unique("customerId")                
-                .ForEach((model, row, state) =>
-                {
-                    row.Map(model, x => x.Business);
-                    row.Map(model, x => x.CustomerPurchases);                    
+                .ForEach((model, row, state) => {
+                    row.Map(model, x => x.Business).Do("businessId");
+                    row.MapList(model, x => x.CustomerPurchases).Do("customerId");
                 })
                 .Fetch();
 
@@ -201,10 +203,9 @@ namespace Dagent.Tests
             IDagentDatabase database = new DagentDatabase("SQLite");
             List<CustomerWithBusiness> customers = database.Query<CustomerWithBusiness>(sql)
                 .Unique("customerId")
-                .ForEach((model, row, state) =>
-                {
-                    row.Map(model, x => x.Business);
-                    row.Map(model, x => x.CustomerPurchases);                    
+                .ForEach((model, row, state) => {
+                    row.Map(model, x => x.Business).Do("customerId");
+                    row.MapList(model, x => x.CustomerPurchases).Do("customerId");                    
                 })
                 .Fetch();
 
@@ -265,8 +266,8 @@ namespace Dagent.Tests
         	        order by 
                         c.customerId, cp.no")
                 .AutoMapping(false)
-                .ForEach((model, row, state) => 
-                {                    
+                .Unique("customerId")
+                .ForEach((model, row, state) => {                    
                     model.customerId = row.Get<int>("customerId");
                     model.name = row.Get<string>("name");
 
@@ -289,8 +290,6 @@ namespace Dagent.Tests
                     }
 
                     model.CustomerPurchases.Add(customerPurchaseModel);
-
-                    state.RequestNewModel = nextRow => nextRow.Get<int>("customerId") != row.Get<int>("customerId");
                 })
                 .Fetch();
 
@@ -317,7 +316,9 @@ namespace Dagent.Tests
                             c.customerId, cp.no")
                 .Unique("customerId")
                 .IgnoreProperties(x => x.name)
-                .ForEach((model, row, state) => row.Map(model, x => x.CustomerPurchases, ignoreProperty))
+                .ForEach((model, row, state) => {
+                    row.MapList(model, x => x.CustomerPurchases).Do("customerId", ignoreProperty);
+                })
                 .Fetch();
 
             foreach (var customer in customers)
@@ -334,7 +335,7 @@ namespace Dagent.Tests
         [TestMethod]
         public void FetchIgnoreProperties()
         {
-            IDagentDatabase database = new DagentDatabase("SQLite");            
+            IDagentDatabase database = new DagentDatabase("SQLite");
 
             List<Customer> customers = database.Query<Customer>(@"
                         select 
@@ -346,10 +347,10 @@ namespace Dagent.Tests
                         on 
                             c.customerId = cp.customerId                 
         	            order by 
-                            c.customerId, cp.no")   
+                            c.customerId, cp.no")
                 .Unique("customerId")
                 .IgnoreProperties(x => x.name)
-                .ForEach((model, row, state) => row.Map(model, x => x.CustomerPurchases, x => x.content))
+                .ForEach((model, row, state) => row.MapList(model, x => x.CustomerPurchases).Do("customerId", x => x.content))
                 .Fetch();
 
             foreach (var customer in customers)
@@ -381,7 +382,7 @@ namespace Dagent.Tests
 	            order by 
                     c.customerId, cp.no", new { fromId = 1000, toId = 1999 })
                 .Unique("customerId")
-                .ForEach((model, row, state) => row.Map(model, x => x.CustomerPurchases))
+                .ForEach((model, row, state) => row.MapList(model, x => x.CustomerPurchases).Do("customerId"))
                 .Fetch();
 
             ValidBetweenParameter(customers);            
@@ -426,7 +427,7 @@ namespace Dagent.Tests
 	            order by 
                     c.customerId, cp.no", new Parameter("fromId", 1000), new Parameter("toId", 1999))
                 .Unique("customerId")
-                .ForEach((model, row, state) => row.Map(model, x => x.CustomerPurchases))
+                .ForEach((model, row, state) => row.MapList(model, x => x.CustomerPurchases).Do("customerId"))
                 .Fetch();
 
             ValidBetweenParameter(customers);             
@@ -452,7 +453,9 @@ namespace Dagent.Tests
 	            order by 
                     c.customerId, cp.no")
                 .Unique("customerId")
-                .ForEach((model, row, state) => row.Map(model, x => x.CustomerPurchases, "cp_"))
+                .ForEach((model, row, state) => {
+                    row.MapList(model, x => x.CustomerPurchases).Do("cp_customerId", "cp_");
+                })
                 .Fetch();
 
             ValidFetch(customers);
@@ -476,7 +479,7 @@ namespace Dagent.Tests
 	            order by 
                     c.customerId, cp.no", new Parameter("fromId", 1000), new Parameter("toId", 1999))
                 .Unique("customerId")
-                .ForEach((model, row, state) => row.Map(model, x => x.CustomerPurchases))
+                .ForEach((model, row, state) => row.MapList(model, x => x.CustomerPurchases).Do("customerId"))
                 .Single();
 
             Assert.AreEqual(true, customer.customerId == 1000);
@@ -511,7 +514,7 @@ namespace Dagent.Tests
 	            order by 
                     c.customerId, cp.no")
                 .Unique("customerId")
-                .ForEach((model, row, state) => row.Map(model, x => x.CustomerPurchases, "cp_"))
+                .ForEach((model, row, state) => row.MapList(model, x => x.CustomerPurchases).Do("cp_customerId", "_cp"))
                 .Page(100, 10, out count);
 
             Assert.AreEqual(10, customers.Count);
@@ -811,7 +814,7 @@ namespace Dagent.Tests
             }
         }
 
-        private bool refreshTestData = true;
+        private bool refreshTestData = false;
         
         [TestInitialize]
         public void Initialize()
@@ -823,18 +826,18 @@ namespace Dagent.Tests
 
         [TestCleanup]
         public void Cleanup()
-        {
-            if (!refreshTestData) return;
+        {            
+            //if (!refreshTestData) return;
 
-            DagentDatabase database = new DagentDatabase("SQLite");
+            //DagentDatabase database = new DagentDatabase("SQLite");
 
-            using (ITransactionScope scope = database.TransactionScope())
-            {
-                database.ExequteNonQuery("delete from customers", null);
-                database.ExequteNonQuery("delete from customerPurchases", null);
+            //using (ITransactionScope scope = database.TransactionScope())
+            //{
+            //    database.ExequteNonQuery("delete from customers", null);
+            //    database.ExequteNonQuery("delete from customerPurchases", null);
 
-                scope.Commit();
-            }
+            //    scope.Commit();
+            //}
         }
     }
 }

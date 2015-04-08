@@ -12,9 +12,9 @@ namespace Dagent.Models
     {
         object Tag { get; set; }
         int RowIndex { get;  }
-        bool NewModel { get; }
-        bool Break { get; set; }
-        Func<INextRow, bool> RequestNewModel { get; set; }
+        //bool NewModel { get; }
+        //bool Break { get; set; }
+        //Func<INextRow, bool> RequestNewModel { get; set; }
     }
 }
 

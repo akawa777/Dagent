@@ -91,13 +91,13 @@ List<Customer> customers =
     db.Query<Customer>(
         "select * from Customers where CustomerId > @CustomerId",
         new { CustomerId = 10 })
-    .AutoMapping(false)
     .ForEach((model, currentRow, state) =>
-     {
-         model.CustomerId = currentRow.Get<int>("CustomerId");
-         model.Name = currentRow.Get<string>("Name");
-     })
+    {
+        model.CustomerId = currentRow.Get<int>("CustomerId");
+        model.Name = currentRow.Get<string>("Name");
+    })
     .Fetch();
+             
         }
 
         public void MappingOneToOne()
@@ -115,12 +115,13 @@ List<Customer> customers =
             Category.CustomerCategoryId = Customer.CustomerCategoryId
         where 
             Customer.CustomerId > @CustomerId",
-        new { CustomerId = 10 })    
+        new { CustomerId = 10 })
     .ForEach((model, currentRow, state) =>
     {
-        currentRow.Map(model, x => x.CustomerCategory);        
+        currentRow.Map(model, x => x.CustomerCategory).Do();
     })
     .Fetch();
+    
     customers =
     db.Query<Customer>(
     "select * from Customers where CustomerId > @CustomerId",
@@ -139,7 +140,155 @@ List<Customer> customers =
 
         public void MappingOneToMany()
         {
-
+            DagentDatabase db = new DagentDatabase("connectionStringName");
+List<Customer> customers =
+    db.Query<Customer>(@"
+        select 
+            * 
+        from 
+            Customers Customer
+        left join
+            CustomerPurchases CustomerPurchase
+        on
+            CustomerPurchase.CustomerId = Customer.CustomerId
+        where 
+            Customer.CustomerId > @CustomerId",
+        new { CustomerId = 10 })
+    .Unique("CustomerId")
+    .ForEach((model, currentRow, state) =>
+    {
+        if (model.CustomerPurchases == null)
+        {
+            model.CustomerPurchases = new List<CustomerPurchase>();
         }
+
+        if (currentRow["PurchaseNo"] != DBNull.Value)
+        {
+            CustomerPurchase purchase = new CustomerPurchase();
+            purchase.CustomerId = currentRow.Get<int>("CustomerId");
+            purchase.PurchaseNo = currentRow.Get<int>("PurchaseNo");
+            purchase.PurchaseContent = currentRow.Get<string>("PurchaseContent");
+
+            model.CustomerPurchases.Add(purchase);
+        }        
+    })
+    .Fetch();
+
+customers =
+    db.Query<Customer>(@"
+        select 
+            * 
+        from 
+            Customers Customer
+        left join
+            CustomerPurchases CustomerPurchase
+        on
+            CustomerPurchase.CustomerId = Customer.CustomerId
+        where 
+            Customer.CustomerId > @CustomerId",
+        new { CustomerId = 10 })
+    .Unique("CustomerId")
+    .ForEach((model, currentRow, state) => 
+    {
+        currentRow.Map(model, x => x.CustomerPurchases).Do("PurchaseNo");
+    })
+    .Fetch();
+        }
+
+        public void InsertUpdateCreate()
+        {
+            DagentDatabase db = new DagentDatabase("connectionStringName");
+
+Customer customer = new Customer { CustomerId = 1 };            
+
+db.Command<Customer>("Customer", "CustomerId").Map((updateRow, model) =>
+{
+    updateRow["Name"] = "Ziba-nyan";
+})
+.Insert(customer);
+        }
+
+        public void ConnectionScope()
+        {
+DagentDatabase db = new DagentDatabase("connectionStringName");
+
+using(IConnectionScope scope = db.ConnectionScope())
+{
+    List<Customer> customers = db.Query<Customer>("Customers").Fetch();
+    List<CustomerCategory> customerCategories = db.Query<CustomerCategory>("CustomerCategory").Fetch();
+}
+        }
+
+        public void TransactionScope()
+        {
+DagentDatabase db = new DagentDatabase("connectionStringName");
+
+using (ITransactionScope scope = db.TransactionScope())
+{
+    Customer customer = new Customer { CustomerId = 1 };
+
+    db.Command<Customer>("Customer", "CustomerId").Map((updateRow, model) =>
+    {
+        updateRow["Name"] = "Ziba-nyan";
+    })
+    .Insert(customer);
+
+    scope.Commit();
+
+    db.Command<Customer>("Customer", "CustomerId").Map((updateRow, model) =>
+    {
+        updateRow["Name"] = "Buchi-nyan";
+    })
+    .Update(customer);
+
+    scope.Rollback();
+}
+        }
+
+        public void TextBuilder()
+        {
+string selectSql = @"
+    select 
+        * 
+    from 
+        Customers Customer
+    left join
+        CustomerPurchases CustomerPurchase
+    on                    
+        CustomerPurchase.CustomerId = Customer.CustomerId
+    where 
+        {{condition}} ";
+
+
+TextBuilder textBuilder = new TextBuilder(
+    selectSql,
+    new { condition = "Customer.CustomerId > @CustomerId" }
+);
+
+string orderSql = @"
+    order by
+        {{sort}} ";
+
+textBuilder.Append(
+    orderSql,
+    new { sort = "Customer.CustomerId, CustomerPurchase.PurchaseNo" }
+);
+
+string sqlSelectOrder = textBuilder.Generate();
+
+DagentDatabase db = new DagentDatabase("connectionStringName");
+
+db.Query<Customer>(sqlSelectOrder, new { CustomerId = 10 })
+.Unique("CustomerId")
+.ForEach((model, currentRow, state) =>
+{
+    currentRow.Map(model, x => x.CustomerPurchases).Do("PurchaseNo");
+})
+.Fetch();
+        }
+
     }
+
+    
+    
 }

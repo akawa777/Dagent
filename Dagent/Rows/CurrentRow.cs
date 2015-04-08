@@ -30,11 +30,5 @@ namespace Dagent.Rows
         {
 
         }
-
-        public new object[] Values
-        {
-            get { return base.Values; }
-            set { Array.Copy(value, values, values.Length); }
-        }
     }
 }

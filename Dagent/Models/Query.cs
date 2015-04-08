@@ -89,8 +89,8 @@ namespace Dagent.Models
                     T model = default(T);
                     bool requestNewModel = true;
 
-                    CurrentRow currentRow = null;
-                    NextRow nextRow = null;
+                    CurrentRow currentRow = null;                    
+                    //NextRow nextRow = null;                    
 
                     mappingState.RowIndex = -1;
                     
@@ -104,24 +104,37 @@ namespace Dagent.Models
                         }
                         else
                         {
-                            if (nextRow == null)
+                            //if (nextRow == null)
+                            //{
+                            //    nextRow = new NextRow(currentRow);
+
+                            //    //if (mappingState.RequestNewModel == null)
+                            //    //{
+                            //    //    mappingState.RequestNewModel = next =>
+                            //    //    {
+                            //    //        if (nextRow.GetUniqueKeyIndexes().Length == 0) return true;
+
+                            //    //        return currentRow.Compare(next.Values, nextRow.GetUniqueKeyIndexes());
+                            //    //    };
+                            //    //}
+                            //}
+
+                            if (currentRow.PrevRow == null)
                             {
-                                nextRow = new NextRow(currentRow);
-
-                                if (mappingState.RequestNewModel == null)
-                                {
-                                    mappingState.RequestNewModel = next =>
-                                    {
-                                        if (nextRow.GetUniqueKeyIndexes().Length == 0) return true;
-
-                                        return currentRow.Compare(next.Values, nextRow.GetUniqueKeyIndexes());
-                                    };
-                                }
+                                currentRow.PrevRow = new CurrentRow(currentRow);
+                            }
+                            else
+                            {   
+                                currentRow.PrevRow.SetValue(currentRow.Values);
                             }
 
-                            reader.GetValues(nextRow.Values);
-                            requestNewModel = mappingState.RequestNewModel(nextRow);                            
-                            currentRow.Values = nextRow.Values;  
+                            //reader.GetValue(nextRow.Values);
+                            object[] nextValues = new object[reader.FieldCount];                                                        
+                            reader.GetValues(nextValues);
+
+                            currentRow.SetValue(nextValues);
+
+                            requestNewModel = queryOption.UniqueColumnNames.Length == 0 ? true : !currentRow.Compare(currentRow.PrevRow, queryOption.UniqueColumnNames);
                         }                 
 
                         if (sliceCount != 0)
@@ -140,7 +153,7 @@ namespace Dagent.Models
 
                         if (requestNewModel)
                         {                            
-                            mappingState.NewModel = true;
+                            //mappingState.NewModel = true;
 
                             if (queryOption.AutoMapping)
                             {   
@@ -159,10 +172,10 @@ namespace Dagent.Models
                             queryOption.MapAction(model, currentRow, mappingState);                               
                         }
 
-                        if (mappingState.Break)
-                        {
-                            break;
-                        }
+                        //if (mappingState.Break)
+                        //{
+                        //    break;
+                        //}
                     }
 
                     return models;

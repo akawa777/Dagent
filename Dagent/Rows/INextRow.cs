@@ -9,8 +9,8 @@ using Dagent.Library;
 using System.Data.Common;
 
 namespace Dagent.Rows
-{   
-    public interface INextRow : IBaseRow, IRowPropertyMapper
+{
+    public interface INextRow : IBaseRow, IRowPropertyMapDefine
     {
 
     }

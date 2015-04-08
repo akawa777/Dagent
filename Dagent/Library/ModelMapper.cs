@@ -29,7 +29,7 @@ namespace Dagent.Library
             public Action<T, object> Setter { get; set; }
         }
 
-        public static bool Map(T model, IRow dagentRow, string prefix, params Expression<Func<T, object>>[] ignorePropertyExpressions)
+        public static bool Map(T model, IRow dagentRow, string validColumnName, string prefix, params Expression<Func<T, object>>[] ignorePropertyExpressions)
         {
             Dictionary<string, MemberInfo> ignoreMemberMap = default(Dictionary<string, MemberInfo>);
             if (ignorePropertyExpressions != null && ignorePropertyExpressions.Length > 0)
@@ -37,10 +37,24 @@ namespace Dagent.Library
                 ignoreMemberMap = ExpressionParser.GetMemberInfoMap<T>(ignorePropertyExpressions);
             }
 
-            bool success = false;
+            bool existValidColumnName = true;
+            bool existData = false;
+
+            Dictionary<string, string> columnMap = new Dictionary<string, string>();
+
             for (int i = 0; i < dagentRow.ColumnCount; i++)
             {
-                string columnName = dagentRow.GetColumnName(i);
+                string originalColumnName = dagentRow.GetColumnName(i);
+                string columnName = originalColumnName;
+
+                if (columnMap.ContainsKey(columnName))
+                {
+                    continue;
+                }
+                else
+                {
+                    columnMap[columnName] = columnName;
+                }
 
                 if (!string.IsNullOrEmpty(prefix))
                 {
@@ -64,12 +78,15 @@ namespace Dagent.Library
                 if (CanChangeType(value, setterDelegateSet.Property.PropertyType) && (ignoreMemberMap == null || !ignoreMemberMap.ContainsKey(setterDelegateSet.Property.Name)))
                 {
                     if (value.GetType() == typeof(DBNull) || value == null)
-                    {                        
-                        
+                    {
+                        if (!string.IsNullOrEmpty(validColumnName) && originalColumnName == validColumnName)                        
+                        {
+                            existValidColumnName = false;
+                        }
                     }
                     else
                     {
-                        success = true;
+                        existData = true;
                         if (Nullable.GetUnderlyingType(setterDelegateSet.Property.PropertyType) != null)
                         {
                             object baseValue = Convert.ChangeType(value, setterDelegateSet.Property.PropertyType.GetGenericArguments()[0]);
@@ -83,7 +100,18 @@ namespace Dagent.Library
                 }
             }
 
-            return success;
+            if (!existValidColumnName)
+            {
+                return false;
+            }
+            else if (!existData)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
         }
 
         private static bool CanChangeType(object value, Type conversionType)

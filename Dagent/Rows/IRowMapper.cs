@@ -22,38 +22,43 @@ namespace Dagent.Rows
         T Map<T>() where T : class, new();
     }
 
-    public interface IRowPropertyMapper
+    public interface IRowPropertyMapDefine
     {
-        void Map<T, P>(T model, Expression<Func<T, P>> targetPropertyExpression, string prefix, params Expression<Func<P, object>>[] ignorePropertyExpressions) 
+        IRowPropertyMapper<T, P> Map<T, P>(T model, Expression<Func<T, P>> targetPropertyExpression) 
             where T : class, new() 
             where P : class, new();
 
-        void Map<T, P>(T model, Expression<Func<T, P>> targetPropertyExpression, string prefix)
+        IRowPropertyMapper<T, P> MapList<T, P>(T model, Expression<Func<T, List<P>>> targetPropertyExpression, params string[] uniqueColumnNames)
             where T : class, new()
             where P : class, new();
+        
+    }
 
-        void Map<T, P>(T model, Expression<Func<T, P>> targetPropertyExpression, params Expression<Func<P, object>>[] ignorePropertyExpressions)
-            where T : class, new()
-            where P : class, new();
+    public interface IRowPropertyMapper<T, P> where T : class, new() where P : class, new()
+    {
+        void Do(string validColumnName, string prefix, params Expression<Func<P, object>>[] ignorePropertyExpressions);
 
-        void Map<T, P>(T model, Expression<Func<T, P>> targetPropertyExpression)
-            where T : class, new()
-            where P : class, new();
+        void Do(string validColumnName, string prefix);
 
-        void Map<T, P>(T model, Expression<Func<T, List<P>>> targetPropertyExpression, string prefix, params Expression<Func<P, object>>[] ignorePropertyExpressions)
-            where T : class, new()
-            where P : class, new();
+        void Do(string validColumnName, params Expression<Func<P, object>>[] ignorePropertyExpressions);
 
-        void Map<T, P>(T model, Expression<Func<T, List<P>>> targetPropertyExpression, string prefix)
-            where T : class, new()
-            where P : class, new();
+        void Do(string validColumnName);
 
-        void Map<T, P>(T model, Expression<Func<T, List<P>>> targetPropertyExpression, params Expression<Func<P, object>>[] ignorePropertyExpressions)
-            where T : class, new()
-            where P : class, new();
+        void Do();
 
-        void Map<T, P>(T model, Expression<Func<T, List<P>>> targetPropertyExpression)
-            where T : class, new()
-            where P : class, new();
+        IRowPropertyMapperCallback<T, P> To(string validColumnName, string prefix, params Expression<Func<P, object>>[] ignorePropertyExpressions);
+
+        IRowPropertyMapperCallback<T, P> To(string validColumnName, string prefix);
+
+        IRowPropertyMapperCallback<T, P> To(string validColumnName, params Expression<Func<P, object>>[] ignorePropertyExpressions);
+
+        IRowPropertyMapperCallback<T, P> To(string validColumnName);
+
+        IRowPropertyMapperCallback<T, P> To();         
+    }
+
+    public interface IRowPropertyMapperCallback<T, P>
+    {
+        void Callback(Action<P> callback);
     }
 }

@@ -12,7 +12,7 @@ using System.Data;
 namespace Dagent.Rows
 {
 
-    public abstract class Row : IRow, IRowDiffer, IRowPropertyMapper
+    public abstract class Row : IRow, IRowCompare, IRowModelMapper, IRowPropertyMapDefine
     {
         public Row(Row row)
         {
@@ -28,16 +28,21 @@ namespace Dagent.Rows
         public Row(Type[] columnTypes, string[] columnNames, object[] values, params string[] uniqueKeys)
         {
             columnCount = columnNames.Length;
+
             this.columnTypes = columnTypes;
             this.columnNames = columnNames;
             this.values = values;
+
             valueMap = new Dictionary<string, int>();
             uniqueKeyIndexes = new int[uniqueKeys.Length];
             int uniqueKeyCount = 0;
 
             for (int i = 0; i < columnCount; i++)
             {
-                valueMap[this.columnNames[i]] = i;
+                if (!valueMap.ContainsKey(columnNames[i]))
+                {
+                    valueMap[columnNames[i]] = i;
+                }
 
                 if (uniqueKeys != null && uniqueKeys.Any(x => x == columnNames[i]))
                 {
@@ -64,7 +69,10 @@ namespace Dagent.Rows
                 columnTypes[i] = dataReader.GetFieldType(i);
                 columnNames[i] = dataReader.GetName(i);
 
-                valueMap[columnNames[i]] = i;
+                if (!valueMap.ContainsKey(columnNames[i]))
+                {
+                    valueMap[columnNames[i]] = i;
+                }                
 
                 if (uniqueKeys != null && uniqueKeys.Any(x => x == columnNames[i]))
                 {
@@ -146,7 +154,7 @@ namespace Dagent.Rows
         {
             get
             {
-                return columnNames.ToArray();
+                return columnNames;
             }
         }
 
@@ -157,42 +165,51 @@ namespace Dagent.Rows
 
         public bool Compare(IRow dagentRow, params string[] columnNames)
         {
-            int[] indexes = new int[columnNames.Length];
-
-            for (int i = 0; i < columnNames.Length; i++)
+            foreach (string columnName in columnNames)
             {
-                indexes[i] = dagentRow.GetOrdinal(columnNames[i]);
-            }
-
-            return Compare(dagentRow.Values, indexes);
-        }
-
-        public bool Compare(object[] values, params int[] indexes)
-        {
-            for (int i = 0; i < indexes.Length; i++)
-            {
-                if (this[indexes[i]] == null && values[indexes[i]] != null)
+                if (this[columnName] == null && dagentRow[columnName] != null)
                 {
-                    return true;
+                    return false;
                 }
-                else if (this[indexes[i]] != null && values[indexes[i]] == null)
+                else if (this[columnName] != null && dagentRow[columnName] == null)
                 {
-                    return true;
+                    return false;
                 }
-                else if (this[indexes[i]].ToString() != values[indexes[i]].ToString())
+                else if (this[columnName].ToString() != dagentRow[columnName].ToString())
                 {
-                    return true;
+                    return false;
                 }
             }
 
-            return false;
+            return true;
         }
+
+        //public bool Compare(object[] values, params int[] indexes)
+        //{
+        //    for (int i = 0; i < indexes.Length; i++)
+        //    {
+        //        if (this[indexes[i]] == null && values[indexes[i]] != null)
+        //        {
+        //            return true;
+        //        }
+        //        else if (this[indexes[i]] != null && values[indexes[i]] == null)
+        //        {
+        //            return true;
+        //        }
+        //        else if (this[indexes[i]].ToString() != values[indexes[i]].ToString())
+        //        {
+        //            return true;
+        //        }
+        //    }
+
+        //    return false;
+        //}
 
         public T Map<T>(string prefix, params Expression<Func<T, object>>[] ignorePropertyExpressions) where T : class, new()
         {
             T model = new T();
 
-            bool success = ModelMapper<T>.Map(model, this, prefix, ignorePropertyExpressions);
+            bool success = ModelMapper<T>.Map(model, this, string.Empty, prefix, ignorePropertyExpressions);
 
             if (success)
             {
@@ -218,77 +235,181 @@ namespace Dagent.Rows
         {
             return Map<T>(string.Empty, new Expression<Func<T, object>>[0]);
         }
+        
 
+        public IRowPropertyMapper<T, P> Map<T, P>(T model, Expression<Func<T, P>> targetPropertyExpression)
+            where T : class, new()
+            where P : class, new()
+        {               
+            return new RowPropertyMapper<T, P>(model, this, targetPropertyExpression);
+        }        
 
-        public void Map<T, P>(T model, Expression<Func<T, P>> targetPropertyExpression, string prefix, params Expression<Func<P, object>>[] ignorePropertyExpressions) where T : class, new() where P : class, new()
-        {
-            P value = this.Map<P>(prefix, ignorePropertyExpressions);
-
-            if (value == null) return;
-
-            PropertyInfo property = ExpressionParser.GetMemberInfo(targetPropertyExpression) as PropertyInfo;
-
-            DynamicMethodBuilder<T>.CreateSetMethod(property)(model, value);
-        }
-
-        public void Map<T, P>(T model, Expression<Func<T, P>> targetPropertyExpression, string prefix)
+        public IRowPropertyMapper<T, P> MapList<T, P>(T model, Expression<Func<T, List<P>>> targetPropertyExpression, params string[] uniqueKeys)
             where T : class, new()
             where P : class, new()
         {
-            this.Map(model, targetPropertyExpression, prefix, new Expression<Func<P, object>>[0]);
+            return new RowPropertyMapper<T, P>(model, this, targetPropertyExpression, uniqueKeys);
         }
 
-        public void Map<T, P>(T model, Expression<Func<T, P>> targetPropertyExpression, params Expression<Func<P, object>>[] ignorePropertyExpressions)
-            where T : class, new()
-            where P : class, new()
+        public IRow PrevRow { get; set; }
+
+        public void SetValue(object[] values)
         {
-            this.Map(model, targetPropertyExpression, string.Empty, new Expression<Func<P, object>>[0]);
+            this.values = values;            
+        }
+    }
+
+    public class RowPropertyMapper<T, P> : IRowPropertyMapper<T, P>
+        where T : class, new()
+        where P : class, new()
+    {
+        public RowPropertyMapper(T model, Row row, Expression<Func<T, P>> targetPropertyExpression)        
+        {
+            this.model = model;
+            this.row = row;
+            this.targetPropertyExpression = targetPropertyExpression;
         }
 
-        public void Map<T, P>(T model, Expression<Func<T, P>> targetPropertyExpression)
-            where T : class, new()
-            where P : class, new()
+        public RowPropertyMapper(T model, Row row, Expression<Func<T, List<P>>> targetListPropertyExpression, string[] uniqueColumnNames)
         {
-            this.Map(model, targetPropertyExpression, string.Empty, new Expression<Func<P, object>>[0]);
+            this.model = model;
+            this.row = row;
+            this.targetListPropertyExpression = targetListPropertyExpression;
+            this.uniqueColumnNames = uniqueColumnNames;     
         }
 
-        public void Map<T, P>(T model, Expression<Func<T, List<P>>> targetPropertyExpression, string prefix, params Expression<Func<P, object>>[] ignorePropertyExpressions)
-            where T : class, new()
-            where P : class, new()
-        {
-            PropertyInfo property = ExpressionParser.GetMemberInfo(targetPropertyExpression) as PropertyInfo;
+        private T model;
+        private Row row;
+        private Expression<Func<T, P>> targetPropertyExpression;
+        private Expression<Func<T, List<P>>> targetListPropertyExpression;
+        private string [] uniqueColumnNames;     
 
-            if (DynamicMethodBuilder<T>.CreateGetMethod(property)(model) == null)
+        public void Do(string validColumnName, string prefix, params Expression<Func<P, object>>[] ignorePropertyExpressions)
+        {
+            this.To(validColumnName, prefix, ignorePropertyExpressions);
+        }
+
+        public void Do(string validColumnName, string prefix)
+        {
+            this.To(validColumnName, prefix, new Expression<Func<P, object>>[0]);
+        }
+
+        public void Do(string validColumnName, params Expression<Func<P, object>>[] ignorePropertyExpressions)
+        {
+            this.To(validColumnName, string.Empty, ignorePropertyExpressions);
+        }
+
+        public void Do(string validColumnName)
+        {
+            this.To(validColumnName, string.Empty, new Expression<Func<P, object>>[0]);
+        }
+
+        public void Do()
+        {
+            this.To(string.Empty, string.Empty, new Expression<Func<P, object>>[0]);
+        }
+
+        public IRowPropertyMapperCallback<T, P> To(string validColumnName, string prefix, params Expression<Func<P, object>>[] ignorePropertyExpressions)
+        {
+            if (targetPropertyExpression != null)
             {
-                DynamicMethodBuilder<T>.CreateSetMethod(property)(model, Activator.CreateInstance(property.PropertyType));
+                P value = new P();
+
+                bool success = ModelMapper<P>.Map(value, row, validColumnName, prefix, ignorePropertyExpressions);
+
+                if (success)
+                {
+                    if (value == null) return new RowPropertyMapperNullCallback<T, P>();
+
+                    PropertyInfo property = PropertyCache<T>.Map[ExpressionParser.GetMemberInfo(targetPropertyExpression).Name];
+
+                    DynamicMethodBuilder<T>.CreateSetMethod(property)(model, value);
+
+                    return new RowPropertyMapperCallback<T, P>(value);
+                }
+                else
+                {
+                    return new RowPropertyMapperNullCallback<T, P>();
+                }
             }
+            else
+            {
+                PropertyInfo property = PropertyCache<T>.Map[ExpressionParser.GetMemberInfo(targetListPropertyExpression).Name];
 
-            P value = this.Map<P>(prefix, ignorePropertyExpressions);
+                Func<T, object> getMethod = DynamicMethodBuilder<T>.CreateGetMethod(property);
 
-            if (value == null) return;
+                if (getMethod(model) == null)
+                {
+                    DynamicMethodBuilder<T>.CreateSetMethod(property)(model, Activator.CreateInstance(property.PropertyType));
+                }
 
-            (DynamicMethodBuilder<T>.CreateGetMethod(property)(model) as List<P>).Add(value);
+                P value = null;
+
+                if (row.PrevRow != null && uniqueColumnNames.Length > 0 && row.Compare(row.PrevRow, uniqueColumnNames))
+                {
+                    List<P> list = getMethod(model) as List<P>;
+                    value = list[list.Count - 1];
+                    return new RowPropertyMapperCallback<T, P>(value);
+                }
+
+                value = new P();
+
+                bool success = ModelMapper<P>.Map(value, row, validColumnName, prefix, ignorePropertyExpressions);
+
+                if (success)
+                {
+                    (getMethod(model) as List<P>).Add(value);
+                }
+                else
+                {
+                    return new RowPropertyMapperNullCallback<T, P>();
+                }
+
+                return new RowPropertyMapperCallback<T, P>(value);
+            }
         }
 
-        public void Map<T, P>(T model, Expression<Func<T, List<P>>> targetPropertyExpression, string prefix)
-            where T : class, new()
-            where P : class, new()
+        public IRowPropertyMapperCallback<T, P> To(string validColumnName, string prefix)
         {
-            this.Map(model, targetPropertyExpression, prefix, new Expression<Func<P, object>>[0]);
+            return this.To(validColumnName, prefix, new Expression<Func<P, object>>[0]);
         }
 
-        public void Map<T, P>(T model, Expression<Func<T, List<P>>> targetPropertyExpression, params Expression<Func<P, object>>[] ignorePropertyExpressions)
-            where T : class, new()
-            where P : class, new()
+        public IRowPropertyMapperCallback<T, P> To(string validColumnName, params Expression<Func<P, object>>[] ignorePropertyExpressions)
         {
-            this.Map(model, targetPropertyExpression, string.Empty, ignorePropertyExpressions);
+            return this.To(validColumnName, string.Empty, ignorePropertyExpressions);
         }
 
-        public void Map<T, P>(T model, Expression<Func<T, List<P>>> targetPropertyExpression)
-            where T : class, new()
-            where P : class, new()
+        public IRowPropertyMapperCallback<T, P> To(string validColumnName)
         {
-            this.Map(model, targetPropertyExpression, string.Empty, new Expression<Func<P, object>>[0]);
+            return this.To(validColumnName, string.Empty, new Expression<Func<P, object>>[0]);
+        }
+
+        public IRowPropertyMapperCallback<T, P> To()
+        {
+            return this.To(string.Empty, string.Empty, new Expression<Func<P, object>>[0]);
+        }
+    }
+
+    public class RowPropertyMapperCallback<T, P> : IRowPropertyMapperCallback<T, P>
+    {
+        public RowPropertyMapperCallback(P value)
+        {
+            this.value = value;
+        }
+
+        private P value;
+
+        public void Callback(Action<P> callback)
+        {
+            callback(value);
+        }
+    }
+
+    public class RowPropertyMapperNullCallback<T, P> : IRowPropertyMapperCallback<T, P>
+    {
+        public void Callback(Action<P> callback)
+        {
+
         }
     }
 }

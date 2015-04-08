@@ -9,7 +9,16 @@ namespace Dagent.Library
 {
     internal static class ExpressionParser
     {
-        private static readonly Dictionary<string, MemberExpression> memberExpressionInfoCache = new Dictionary<string, MemberExpression>();
+        private static class MemberExpressionCache<T>
+        {
+            static MemberExpressionCache()
+            {
+                Map = new Dictionary<string, MemberExpression>();
+            }
+
+            public static Dictionary<string, MemberExpression> Map { get; set; }
+        }
+        
 
         public static Dictionary<string, MemberInfo> GetMemberInfoMap<T>(params Expression<Func<T, object>>[] expressions)
         {
@@ -43,9 +52,9 @@ namespace Dagent.Library
         public static MemberInfo GetMemberInfo<T>(Expression<Func<T, object>> expression)
         {           
             
-            MemberExpression memberExpression = null;
+            MemberExpression memberExpression = null;            
 
-            if (memberExpressionInfoCache.TryGetValue(expression.ToString(), out memberExpression))
+            if (MemberExpressionCache<T>.Map.TryGetValue(expression.Body.ToString().Split('.')[1], out memberExpression))
             {
                 return memberExpression.Member;
             }
@@ -53,7 +62,8 @@ namespace Dagent.Library
             if (expression.Body.NodeType == ExpressionType.MemberAccess)
             {
                 memberExpression = (MemberExpression)expression.Body;
-                memberExpressionInfoCache[expression.ToString()] = memberExpression;
+                MemberExpressionCache<T>.Map[expression.Body.ToString().Split('.')[1]] = memberExpression;
+                
             }
             else if (expression.Body.NodeType == ExpressionType.Convert)
             {
@@ -75,7 +85,7 @@ namespace Dagent.Library
         {
             MemberExpression memberExpression = null;
 
-            if (memberExpressionInfoCache.TryGetValue(expression.ToString(), out memberExpression))
+            if (MemberExpressionCache<T>.Map.TryGetValue(expression.Body.ToString().Split('.')[1], out memberExpression))
             {
                 return memberExpression.Member;
             }
@@ -83,7 +93,7 @@ namespace Dagent.Library
             if (expression.Body.NodeType == ExpressionType.MemberAccess)
             {
                 memberExpression = (MemberExpression)expression.Body;
-                memberExpressionInfoCache[expression.ToString()] = memberExpression;
+                MemberExpressionCache<T>.Map[expression.Body.ToString().Split('.')[1]] = memberExpression;
             }
             else if (expression.Body.NodeType == ExpressionType.Convert)
             {
