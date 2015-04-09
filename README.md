@@ -14,7 +14,7 @@ public class Customer
 }
 
 DagentDatabase db = new DagentDatabase("connectionStringName");
-List<Customer> customers = db.Query<Customer>("select * from Customers").Fetch();
+List<Customer> customers = db.Query<Customer>("select * from Customers").List();
 ```
 ### Insert, Update, Delete
 ```cs
