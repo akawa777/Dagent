@@ -64,5 +64,15 @@ namespace Dagent.Rows
         {
             get { return columnValueMap.Values.ToArray(); }
         }
+
+        public bool Remove(string columnName)
+        {
+            if (columnValueMap.ContainsKey(columnName))
+            {
+                return columnValueMap.Remove(columnName);
+            }
+
+            return false;
+        }
     }
 }

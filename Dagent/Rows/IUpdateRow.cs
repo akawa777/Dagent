@@ -12,6 +12,6 @@ namespace Dagent.Rows
 {    
     public interface IUpdateRow : IBaseRow
     {
-        
+        bool Remove(string columnName);
     }
 }

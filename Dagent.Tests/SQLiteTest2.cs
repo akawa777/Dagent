@@ -14,8 +14,10 @@ public class Customer
 {
     public int CustomerId { get; set; }
     public string Name { get; set; }
-    public CustomerCategory CustomerCategory { get; set; } 
-    public List<CustomerPurchase> CustomerPurchases { get; set; } 
+    public int CustomerCategoryId { get; set; }
+
+    public CustomerCategory Category { get; set; } 
+    public List<CustomerPurchase> Purchases { get; set; } 
 }
 
 public class CustomerCategory
@@ -28,8 +30,17 @@ public class CustomerPurchase
 {
     public int CustomerId { get; set; }
     public int PurchaseNo { get; set; }
-    public string PurchaseContent { get; set; }        
-}    
+    public int ProductId { get; set; }
+    public string PurchaseContent { get; set; }
+
+    public Product Product { get; set; }
+}
+
+public class Product
+{
+    public int ProductId { get; set; }
+    public string ProductName { get; set; }    
+}   
 
     //[TestClass]
     public class SQLiteTest
@@ -37,51 +48,67 @@ public class CustomerPurchase
         //[TestMethod]
         public void GetStarted()
         {
-            DagentDatabase db = new DagentDatabase("connectionStringName");
 
-            List<Customer> customers = db.Query<Customer>("select * from Customers where CustomerId > @CustomerId", new { CustomerId = 1000 }).Fetch();
 
-            Customer customer = new Customer { CustomerId = 1, Name = "Ziba-nyan" };
+DagentDatabase db = new DagentDatabase("connectionStringName");
 
-            db.Command<Customer>("Customers", "CustomerId").Insert(customer);
+List<Customer> customers = db.Query<Customer>("select * from Customers where CustomerId > @CustomerId", new { CustomerId = 1000 }).List();
 
-            customer.Name = "Buchi-nyan";
-            db.Command<Customer>("Customers", "CustomerId").Update(customer);
+Customer customer = new Customer { CustomerId = 1, Name = "Ziba-nyan" };
 
-            db.Command<Customer>("Customers", "CustomerId").Delete(customer);
+db.Command<Customer>("Customers", "CustomerId").Insert(customer);
+
+customer.Name = "Buchi-nyan";
+db.Command<Customer>("Customers", "CustomerId").Update(customer);
+
+db.Command<Customer>("Customers", "CustomerId").Delete(customer);
+
+
         }
 
         public void QuerySingle()
         {
-            DagentDatabase db = new DagentDatabase("connectionStringName");
 
-            Customer customer = db.Query<Customer>("Customers", new { CustomerId = 1 }).Single();
-            customer = db.Query<Customer>("select * from Customers where CustomerId = @CustomerId", new { CustomerId = 1 }).Single();
+
+DagentDatabase db = new DagentDatabase("connectionStringName");
+
+Customer customer = db.Query<Customer>("Customers", new { CustomerId = 1 }).Single();
+customer = db.Query<Customer>("select * from Customers where CustomerId = @CustomerId", new { CustomerId = 1 }).Single();
+
+
         }
 
         public void QueryList()
         {
-            DagentDatabase db = new DagentDatabase("connectionStringName");
-            List<Customer> customers =
-                db.Query<Customer>("Customers").Fetch();
 
-            customers =
-                db.Query<Customer>(
-                    "select * from Customers where CustomerId > @CustomerId",
-                    new { CustomerId = 10 })
-                .Fetch();
+
+DagentDatabase db = new DagentDatabase("connectionStringName");
+List<Customer> customers =
+    db.Query<Customer>("Customers").List();
+
+customers =
+    db.Query<Customer>(
+        "select * from Customers where CustomerId > @CustomerId",
+        new { CustomerId = 10 })
+    .List();
+
+
         }
 
         public void QueryPaging()
         {
-            DagentDatabase db = new DagentDatabase("connectionStringName");
 
-            int totalCount = 0;
-            List<Customer> customers =
-                db.Query<Customer>(
-                    "select * from Customers where CustomerId > @CustomerId",
-                    new { CustomerId = 10 })
-                .Page(10, 100, out totalCount);
+
+DagentDatabase db = new DagentDatabase("connectionStringName");
+
+int totalCount = 0;
+List<Customer> customers =
+    db.Query<Customer>(
+        "select * from Customers where CustomerId > @CustomerId",
+        new { CustomerId = 10 })
+    .Page(10, 100, out totalCount);
+
+
         }
 
         public void Mapping()
@@ -91,17 +118,19 @@ List<Customer> customers =
     db.Query<Customer>(
         "select * from Customers where CustomerId > @CustomerId",
         new { CustomerId = 10 })
-    .ForEach((model, currentRow, state) =>
+    .Each((model, row) =>
     {
-        model.CustomerId = currentRow.Get<int>("CustomerId");
-        model.Name = currentRow.Get<string>("Name");
+        model.CustomerId = row.Get<int>("CustomerId");
+        model.Name = row.Get<string>("Name");
     })
-    .Fetch();
+    .List();
              
         }
 
         public void MappingOneToOne()
         {
+
+
 DagentDatabase db = new DagentDatabase("connectionStringName");
 List<Customer> customers =
     db.Query<Customer>(@"
@@ -116,31 +145,43 @@ List<Customer> customers =
         where 
             Customer.CustomerId > @CustomerId",
         new { CustomerId = 10 })
-    .ForEach((model, currentRow, state) =>
-    {
-        currentRow.Map(model, x => x.CustomerCategory).Do();
-    })
-    .Fetch();
-    
-    customers =
-    db.Query<Customer>(
-    "select * from Customers where CustomerId > @CustomerId",
-    new { CustomerId = 10 })
-    .ForEach((model, currentRow, state) =>
+    .Each((model, row) =>
     {
         CustomerCategory category = new CustomerCategory();
-        category.CustomerCategoryId = currentRow.Get<int>("CustomCaregoryId");
-        category.CategoryName = currentRow.Get<string>("CategoryName");
+        category.CustomerCategoryId = row.Get<int>("CustomCaregoryId");
+        category.CategoryName = row.Get<string>("CategoryName");
 
-        model.CustomerCategory = category;
-        
+        model.Category = category;
     })
-    .Fetch();
+    .List();
+customers =
+    db.Query<Customer>(@"
+        select 
+            * 
+        from 
+            Customers Customer
+        inner join
+            CustomerCategories Category
+        on
+            Category.CustomerCategoryId = Customer.CustomerCategoryId
+        where 
+            Customer.CustomerId > @CustomerId",
+        new { CustomerId = 10 })
+    .Each((model, row) =>
+    {
+        row.Map(model, x => x.Category).Do();
+    })
+    .List();
+    
+
         }
 
         public void MappingOneToMany()
         {
-            DagentDatabase db = new DagentDatabase("connectionStringName");
+
+
+DagentDatabase db = new DagentDatabase("connectionStringName");
+
 List<Customer> customers =
     db.Query<Customer>(@"
         select 
@@ -148,31 +189,34 @@ List<Customer> customers =
         from 
             Customers Customer
         left join
-            CustomerPurchases CustomerPurchase
+            CustomerPurchases Purchase
         on
             CustomerPurchase.CustomerId = Customer.CustomerId
         where 
-            Customer.CustomerId > @CustomerId",
+            Customer.CustomerId > @CustomerId
+        order by
+            Customer.CustomerId,
+            Purchase.PurchaseNo",
         new { CustomerId = 10 })
     .Unique("CustomerId")
-    .ForEach((model, currentRow, state) =>
+    .Each((model, row) =>
     {
-        if (model.CustomerPurchases == null)
+        if (model.Purchases == null)
         {
-            model.CustomerPurchases = new List<CustomerPurchase>();
+            model.Purchases = new List<CustomerPurchase>();
         }
 
-        if (currentRow["PurchaseNo"] != DBNull.Value)
+        if (row["PurchaseNo"] != DBNull.Value)
         {
             CustomerPurchase purchase = new CustomerPurchase();
-            purchase.CustomerId = currentRow.Get<int>("CustomerId");
-            purchase.PurchaseNo = currentRow.Get<int>("PurchaseNo");
-            purchase.PurchaseContent = currentRow.Get<string>("PurchaseContent");
+            purchase.CustomerId = row.Get<int>("CustomerId");
+            purchase.PurchaseNo = row.Get<int>("PurchaseNo");
+            purchase.PurchaseContent = row.Get<string>("PurchaseContent");
 
-            model.CustomerPurchases.Add(purchase);
+            model.Purchases.Add(purchase);
         }        
     })
-    .Fetch();
+    .List();
 
 customers =
     db.Query<Customer>(@"
@@ -181,23 +225,117 @@ customers =
         from 
             Customers Customer
         left join
-            CustomerPurchases CustomerPurchase
+            CustomerPurchases Purchase
         on
             CustomerPurchase.CustomerId = Customer.CustomerId
         where 
-            Customer.CustomerId > @CustomerId",
+            Customer.CustomerId > @CustomerId
+        order by
+            Customer.CustomerId,
+            Purchase.PurchaseNo",
         new { CustomerId = 10 })
     .Unique("CustomerId")
-    .ForEach((model, currentRow, state) => 
+    .Each((model, row) => 
     {
-        currentRow.Map(model, x => x.CustomerPurchases).Do("PurchaseNo");
+        row.Map(model, x => x.Purchases, "PurchaseNo").Do();
     })
-    .Fetch();
+    .List();
+
+
+        }
+
+        public void MappingNested()
+        {
+
+
+    DagentDatabase db = new DagentDatabase("connectionStringName");
+
+List<Customer> customers =
+    db.Query<Customer>(@"
+        select 
+            * 
+        from 
+            Customers Customer
+        left join
+            CustomerPurchases Purchase
+        on
+            CustomerPurchase.CustomerId = Customer.CustomerId
+        inner join
+            Products Product
+        on
+            Product.ProductId = Purcase.ProductId
+        where 
+            Customer.CustomerId > @CustomerId
+        order by
+            Customer.CustomerId,
+            Purchase.PurchaseNo",
+        new { CustomerId = 10 })
+    .Unique("CustomerId")
+    .Each((model, row) =>
+    {
+        if (model.Purchases == null)
+        {
+            model.Purchases = new List<CustomerPurchase>();
+        }
+
+        if (row["PurchaseNo"] != DBNull.Value)
+        {
+            CustomerPurchase purchase = new CustomerPurchase();
+            purchase.CustomerId = row.Get<int>("CustomerId");
+            purchase.PurchaseNo = row.Get<int>("PurchaseNo");
+            purchase.PurchaseContent = row.Get<string>("PurchaseContent");
+
+            Product product = new Product();
+            product.ProductId = row.Get<int>("ProductId");
+            product.ProductName = row.Get<string>("ProductName");
+
+            purchase.Product = product;
+
+            model.Purchases.Add(purchase);
+        }
+    })
+    .List();
+
+customers =
+    db.Query<Customer>(@"
+        select 
+            * 
+        from 
+            Customers Customer
+        left join
+            CustomerPurchases Purchase
+        on
+            CustomerPurchase.CustomerId = Customer.CustomerId
+        inner join
+            Products Product
+        on
+            Product.ProductId = Purcase.ProductId
+        where 
+            Customer.CustomerId > @CustomerId
+        order by
+            Customer.CustomerId,
+            Purchase.PurchaseNo",
+        new { CustomerId = 10 })
+    .Unique("CustomerId")
+    .Each((model, row) =>
+    {
+        row.Map(model, x => x.Purchases, "PurchaseNo")
+            .Unique("PurchaseNo")
+            .Each(purchase => 
+            {
+                row.Map(purchase, x => x.Product).Do();
+            }).Do();       
+    })
+    .List();
+
+
         }
 
         public void InsertUpdateCreate()
         {
-            DagentDatabase db = new DagentDatabase("connectionStringName");
+
+
+DagentDatabase db = new DagentDatabase("connectionStringName");
 
 Customer customer = new Customer { CustomerId = 1 };            
 
@@ -214,51 +352,50 @@ DagentDatabase db = new DagentDatabase("connectionStringName");
 
 using(IConnectionScope scope = db.ConnectionScope())
 {
-    List<Customer> customers = db.Query<Customer>("Customers").Fetch();
-    List<CustomerCategory> customerCategories = db.Query<CustomerCategory>("CustomerCategory").Fetch();
+    List<Customer> customers = db.Query<Customer>("Customers").List();
+
+    List<CustomerCategory> customerCategories = 
+        db.Query<CustomerCategory>("CustomerCategory").List();
 }
+
+
         }
 
         public void TransactionScope()
         {
+
+
 DagentDatabase db = new DagentDatabase("connectionStringName");
 
 using (ITransactionScope scope = db.TransactionScope())
 {
-    Customer customer = new Customer { CustomerId = 1 };
+    Customer customer = new Customer { CustomerId = 1, Name = "Ziba-nyan" };
 
-    db.Command<Customer>("Customer", "CustomerId").Map((updateRow, model) =>
-    {
-        updateRow["Name"] = "Ziba-nyan";
-    })
-    .Insert(customer);
+    db.Command<Customer>("Customer", "CustomerId").Insert(customer);
 
     scope.Commit();
 
-    db.Command<Customer>("Customer", "CustomerId").Map((updateRow, model) =>
-    {
-        updateRow["Name"] = "Buchi-nyan";
-    })
-    .Update(customer);
+    customer.Name = "Buchi-nyan";
+
+    db.Command<Customer>("Customer", "CustomerId").Update(customer);
 
     scope.Rollback();
 }
+
+
         }
 
         public void TextBuilder()
         {
+
+
 string selectSql = @"
     select 
         * 
     from 
-        Customers Customer
-    left join
-        CustomerPurchases CustomerPurchase
-    on                    
-        CustomerPurchase.CustomerId = Customer.CustomerId
+        Customers Customer    
     where 
-        {{condition}} ";
-
+        {{condition}}";
 
 TextBuilder textBuilder = new TextBuilder(
     selectSql,
@@ -267,24 +404,21 @@ TextBuilder textBuilder = new TextBuilder(
 
 string orderSql = @"
     order by
-        {{sort}} ";
+        {{sort}}";
 
 textBuilder.Append(
     orderSql,
-    new { sort = "Customer.CustomerId, CustomerPurchase.PurchaseNo" }
+    new { sort = "Customer.Name" }
 );
 
 string sqlSelectOrder = textBuilder.Generate();
 
 DagentDatabase db = new DagentDatabase("connectionStringName");
 
-db.Query<Customer>(sqlSelectOrder, new { CustomerId = 10 })
-.Unique("CustomerId")
-.ForEach((model, currentRow, state) =>
-{
-    currentRow.Map(model, x => x.CustomerPurchases).Do("PurchaseNo");
-})
-.Fetch();
+List<Customer> customers =
+    db.Query<Customer>(sqlSelectOrder, new { CustomerId = 10 }).List();
+
+
         }
 
     }

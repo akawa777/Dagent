@@ -51,17 +51,17 @@ namespace Dagent.Tests
         [TestMethod]
         public void GetStarted()
         {            
-            IDagentDatabase database = new DagentDatabase("SQLite");
+            IDagentDatabase database = new DagentDatabase("SQLite");            
             
             Customer customer = database.Query<Customer>("customers", new { customerId = 1 }).Single();
 
             Assert.AreEqual(1, customer.customerId);
 
-            List<Customer> customers = database.Query<Customer>("customers").Fetch();
+            List<Customer> customers = database.Query<Customer>("customers").List();
 
             Assert.AreEqual(10000, customers.Count);
 
-            customers = database.Query<Customer>("select * from customers where customerId > @customerId", new { customerId = 1000 }).Fetch();
+            customers = database.Query<Customer>("select * from customers where customerId > @customerId", new { customerId = 1000 }).List();
 
             Assert.AreEqual(9000, customers.Count);
 
@@ -99,7 +99,7 @@ namespace Dagent.Tests
         	            order by 
                             c.customerId, cp.no")
                 .Unique("customerId") 
-                .ForEach((model, row, state) =>
+                .Each((model, row) =>
                 {
                     CustomerPurchase customerPurchaseModel = new CustomerPurchase
                     {
@@ -115,9 +115,9 @@ namespace Dagent.Tests
 
                     model.CustomerPurchases.Add(customerPurchaseModel);
                 })
-                .Fetch();
+                .List();
 
-            ValidFetch(customers);
+            ValidList(customers);
         }
 
         [TestMethod]
@@ -136,12 +136,10 @@ namespace Dagent.Tests
 	            order by 
                     c.customerId, cp.no")
                 .Unique("customerId")                                
-                .ForEach((model, row, state) => {
-                    row.MapList(model, x => x.CustomerPurchases).Do();
-                })                
-                .Fetch();
+                .Each((model, row) => row.Map(model, x => x.CustomerPurchases, "no").Do())
+                .List();
 
-            ValidFetch(customers);            
+            ValidList(customers);            
         }
 
         [TestMethod]
@@ -164,13 +162,13 @@ namespace Dagent.Tests
 	            order by 
                     c.customerId, cp.no")
                 .Unique("customerId")                
-                .ForEach((model, row, state) => {
-                    row.Map(model, x => x.Business).Do("businessId");
-                    row.MapList(model, x => x.CustomerPurchases).Do("customerId");
+                .Each((model, row) => {
+                    row.Map(model, x => x.Business, "businessName").Do();
+                    row.Map(model, x => x.CustomerPurchases, "no").Do();
                 })
-                .Fetch();
+                .List();
 
-            ValidFetch(customers);
+            ValidList(customers);
         }
 
         [TestMethod]
@@ -203,20 +201,20 @@ namespace Dagent.Tests
             IDagentDatabase database = new DagentDatabase("SQLite");
             List<CustomerWithBusiness> customers = database.Query<CustomerWithBusiness>(sql)
                 .Unique("customerId")
-                .ForEach((model, row, state) => {
-                    row.Map(model, x => x.Business).Do("customerId");
-                    row.MapList(model, x => x.CustomerPurchases).Do("customerId");                    
+                .Each((model, row) => {
+                    row.Map(model, x => x.Business, "businessName").Do();
+                    row.Map(model, x => x.CustomerPurchases, "no").Do();                  
                 })
-                .Fetch();
+                .List();
 
-            ValidFetch(customers);
+            ValidList(customers);
 
             sql = textBuilder.Clear().Generate();
 
             Assert.AreEqual("", sql);
         }
 
-        private void ValidFetch<T>(IEnumerable<T> customers) where T : Customer
+        private void ValidList<T>(IEnumerable<T> customers) where T : Customer
         {
             Assert.AreEqual(10000, customers.Count());
 
@@ -265,9 +263,9 @@ namespace Dagent.Tests
                         c.customerId = cp.customerId                 
         	        order by 
                         c.customerId, cp.no")
-                .AutoMapping(false)
+                .Auto(false)
                 .Unique("customerId")
-                .ForEach((model, row, state) => {                    
+                .Each((model, row) => {                    
                     model.customerId = row.Get<int>("customerId");
                     model.name = row.Get<string>("name");
 
@@ -291,13 +289,13 @@ namespace Dagent.Tests
 
                     model.CustomerPurchases.Add(customerPurchaseModel);
                 })
-                .Fetch();
+                .List();
 
-            ValidFetch(customers);
+            ValidList(customers);
         }
 
         [TestMethod]
-        public void FetchIgnorePropertiesCache()
+        public void FetchIgnoreCache()
         {
             IDagentDatabase database = new DagentDatabase("SQLite");
 
@@ -315,11 +313,11 @@ namespace Dagent.Tests
         	            order by 
                             c.customerId, cp.no")
                 .Unique("customerId")
-                .IgnoreProperties(x => x.name)
-                .ForEach((model, row, state) => {
-                    row.MapList(model, x => x.CustomerPurchases).Do("customerId", ignoreProperty);
+                .Ignore(x => x.name)
+                .Each((model, row) => {
+                    row.Map(model, x => x.CustomerPurchases, "no").Ignore(ignoreProperty).Do();
                 })
-                .Fetch();
+                .List();
 
             foreach (var customer in customers)
             {
@@ -333,7 +331,7 @@ namespace Dagent.Tests
         }
 
         [TestMethod]
-        public void FetchIgnoreProperties()
+        public void FetchIgnore()
         {
             IDagentDatabase database = new DagentDatabase("SQLite");
 
@@ -349,9 +347,9 @@ namespace Dagent.Tests
         	            order by 
                             c.customerId, cp.no")
                 .Unique("customerId")
-                .IgnoreProperties(x => x.name)
-                .ForEach((model, row, state) => row.MapList(model, x => x.CustomerPurchases).Do("customerId", x => x.content))
-                .Fetch();
+                .Ignore(x => x.name)
+                .Each((model, row) => row.Map(model, x => x.CustomerPurchases, "no").Ignore(x => x.content).Do())
+                .List();
 
             foreach (var customer in customers)
             {
@@ -382,8 +380,8 @@ namespace Dagent.Tests
 	            order by 
                     c.customerId, cp.no", new { fromId = 1000, toId = 1999 })
                 .Unique("customerId")
-                .ForEach((model, row, state) => row.MapList(model, x => x.CustomerPurchases).Do("customerId"))
-                .Fetch();
+                .Each((model, row) => row.Map(model, x => x.CustomerPurchases, "no").Do())
+                .List();
 
             ValidBetweenParameter(customers);            
         }
@@ -427,8 +425,8 @@ namespace Dagent.Tests
 	            order by 
                     c.customerId, cp.no", new Parameter("fromId", 1000), new Parameter("toId", 1999))
                 .Unique("customerId")
-                .ForEach((model, row, state) => row.MapList(model, x => x.CustomerPurchases).Do("customerId"))
-                .Fetch();
+                .Each((model, row) => row.Map(model, x => x.CustomerPurchases, "no").Do())
+                .List();
 
             ValidBetweenParameter(customers);             
         }
@@ -453,12 +451,12 @@ namespace Dagent.Tests
 	            order by 
                     c.customerId, cp.no")
                 .Unique("customerId")
-                .ForEach((model, row, state) => {
-                    row.MapList(model, x => x.CustomerPurchases).Do("cp_customerId", "cp_");
+                .Each((model, row) => {
+                    row.Map(model, x => x.CustomerPurchases, "cp_customerId").Prefix("cp_").Do();
                 })
-                .Fetch();
+                .List();
 
-            ValidFetch(customers);
+            ValidList(customers);
         }
 
         [TestMethod]
@@ -479,7 +477,7 @@ namespace Dagent.Tests
 	            order by 
                     c.customerId, cp.no", new Parameter("fromId", 1000), new Parameter("toId", 1999))
                 .Unique("customerId")
-                .ForEach((model, row, state) => row.MapList(model, x => x.CustomerPurchases).Do("customerId"))
+                .Each((model, row) => row.Map(model, x => x.CustomerPurchases, "no").Do())
                 .Single();
 
             Assert.AreEqual(true, customer.customerId == 1000);
@@ -514,7 +512,7 @@ namespace Dagent.Tests
 	            order by 
                     c.customerId, cp.no")
                 .Unique("customerId")
-                .ForEach((model, row, state) => row.MapList(model, x => x.CustomerPurchases).Do("cp_customerId", "_cp"))
+                .Each((model, row) => row.Map(model, x => x.CustomerPurchases, "cp_customerId").Prefix("cp_").Do())
                 .Page(100, 10, out count);
 
             Assert.AreEqual(10, customers.Count);
@@ -639,7 +637,7 @@ namespace Dagent.Tests
                 id = currentId;
             }
 
-            ValidFetch(customers);
+            ValidList(customers);
         }
 
         [TestMethod]
@@ -716,7 +714,7 @@ namespace Dagent.Tests
 
             command.Connection.Close();
 
-            ValidFetch(customers);
+            ValidList(customers);
         }
 
         [TestMethod]
@@ -751,7 +749,7 @@ namespace Dagent.Tests
             Assert.AreEqual(customer.customerId, registerdCustomer.customerId);
             Assert.AreEqual(customer.name, registerdCustomer.name);
 
-            ret = command.AutoMapping(false).Map((row, model) => 
+            ret = command.Auto(false).Map((row, model) => 
             {
                 row["customerId"] = model.customerId;
                 row["name"] = model.name;

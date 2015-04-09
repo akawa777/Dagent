@@ -59,21 +59,21 @@ namespace Dagent.Models
             using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel.Connection))
             {
                  count = Count();
-                return Fetch((pageNo - 1) * noPerPage, noPerPage);
+                return List((pageNo - 1) * noPerPage, noPerPage);
             }            
         }
 
-        public virtual List<T> Fetch()
+        public virtual List<T> List()
         {            
-            return Fetch(0, 0);
+            return List(0, 0);
         }
 
         public virtual T Single()
         {
-            return Fetch(0, 1).FirstOrDefault();
+            return List(0, 1).FirstOrDefault();
         }
 
-        protected virtual List<T> Fetch(int sliceIndex, int sliceCount)
+        protected virtual List<T> List(int sliceIndex, int sliceCount)
         {
             using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel.Connection))
             {
@@ -84,41 +84,22 @@ namespace Dagent.Models
                 {                    
                     int uniqueRowIndex = -1;
 
-                    MappingState<T> mappingState = new MappingState<T>();
-
                     T model = default(T);
                     bool requestNewModel = true;
 
-                    CurrentRow currentRow = null;                    
-                    //NextRow nextRow = null;                    
+                    CurrentRow currentRow = null;                                        
 
-                    mappingState.RowIndex = -1;
+                    bool firstRow = true;
                     
                     while (reader.Read())
                     {
-                        mappingState.RowIndex++;
-
-                        if (mappingState.RowIndex == 0)
+                        if (firstRow)
                         {
-                            currentRow = new CurrentRow(reader, queryOption.UniqueColumnNames);                            
+                            currentRow = new CurrentRow(reader, queryOption.UniqueColumnNames);
+                            firstRow = false;
                         }
                         else
                         {
-                            //if (nextRow == null)
-                            //{
-                            //    nextRow = new NextRow(currentRow);
-
-                            //    //if (mappingState.RequestNewModel == null)
-                            //    //{
-                            //    //    mappingState.RequestNewModel = next =>
-                            //    //    {
-                            //    //        if (nextRow.GetUniqueKeyIndexes().Length == 0) return true;
-
-                            //    //        return currentRow.Compare(next.Values, nextRow.GetUniqueKeyIndexes());
-                            //    //    };
-                            //    //}
-                            //}
-
                             if (currentRow.PrevRow == null)
                             {
                                 currentRow.PrevRow = new CurrentRow(currentRow);
@@ -128,7 +109,6 @@ namespace Dagent.Models
                                 currentRow.PrevRow.SetValue(currentRow.Values);
                             }
 
-                            //reader.GetValue(nextRow.Values);
                             object[] nextValues = new object[reader.FieldCount];                                                        
                             reader.GetValues(nextValues);
 
@@ -152,12 +132,10 @@ namespace Dagent.Models
                         }
 
                         if (requestNewModel)
-                        {                            
-                            //mappingState.NewModel = true;
-
+                        {   
                             if (queryOption.AutoMapping)
                             {   
-                                model = currentRow.Map<T>(queryOption.IgnorePropertyExpressions);
+                                model = currentRow.Map<T>(queryOption.PrefixColumnName, queryOption.IgnorePropertyExpressions);                                
                             }
                             else
                             {
@@ -169,13 +147,8 @@ namespace Dagent.Models
 
                         if (queryOption.MapAction != null)
                         {
-                            queryOption.MapAction(model, currentRow, mappingState);                               
+                            queryOption.MapAction(model, currentRow);                               
                         }
-
-                        //if (mappingState.Break)
-                        //{
-                        //    break;
-                        //}
                     }
 
                     return models;
@@ -199,13 +172,20 @@ namespace Dagent.Models
             return this;
         }
 
-        public virtual IQuery<T> AutoMapping(bool autoMapping)
+        public IQuery<T> Prefix(string prefixColumnName)
+        {
+            queryOption.PrefixColumnName = prefixColumnName;
+
+            return this;
+        }
+
+        public virtual IQuery<T> Auto(bool autoMapping)
         {
             queryOption.AutoMapping = autoMapping;
             return this;
         }
 
-        public virtual IQuery<T> IgnoreProperties(params Expression<Func<T, object>>[] ignorePropertyExpressions)
+        public virtual IQuery<T> Ignore(params Expression<Func<T, object>>[] ignorePropertyExpressions)
         {
             if (ignorePropertyExpressions == null)
             {
@@ -239,11 +219,11 @@ namespace Dagent.Models
         }
 
 
-        public virtual IQuery<T> ForEach(Action<T, ICurrentRow, IMappingState<T>> mapAction)
+        public virtual IQuery<T> Each(Action<T, ICurrentRow> mapAction)
         {
             if (mapAction == null)
             {
-                queryOption.MapAction = (row, t, s) => { };
+                queryOption.MapAction = (mdel, currentRow) => { };
             }
             else
             {

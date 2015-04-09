@@ -15,15 +15,16 @@ namespace Dagent.Options
         {
             Parameters = new Parameter[0];
             AutoMapping = true;
-            MapAction = (model, row, state) => { };
+            MapAction = (model, row) => { };
             IgnorePropertyExpressions = new Expression<Func<T, object>>[0];
             UniqueColumnNames = new string[0];
         }
 
         public virtual Parameter[] Parameters { get; set; }
         public virtual string[] UniqueColumnNames { get; set; }
+        public virtual string PrefixColumnName { get; set; }
         public virtual bool AutoMapping { get; set; }
-        public virtual Action<T, ICurrentRow, IMappingState<T>> MapAction { get; set; }
+        public virtual Action<T, ICurrentRow> MapAction { get; set; }
         public virtual Expression<Func<T, object>>[] IgnorePropertyExpressions { get; set; }  
         
     }

@@ -127,13 +127,13 @@ namespace Dagent.Models
             return this;
         }
 
-        public virtual ICommand<T> AutoMapping(bool autoMapping)
+        public virtual ICommand<T> Auto(bool autoMapping)
         {
             commandOption.AutoMapping = autoMapping;
             return this;
         }
 
-        public virtual ICommand<T> IgnoreProperties(params Expression<Func<T, object>>[] ignorePropertyExpressions)
+        public virtual ICommand<T> Ignore(params Expression<Func<T, object>>[] ignorePropertyExpressions)
         {
             if (ignorePropertyExpressions == null)
             {

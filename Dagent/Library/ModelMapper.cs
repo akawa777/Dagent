@@ -29,18 +29,26 @@ namespace Dagent.Library
             public Action<T, object> Setter { get; set; }
         }
 
-        public static bool Map(T model, IRow dagentRow, string validColumnName, string prefix, params Expression<Func<T, object>>[] ignorePropertyExpressions)
+        public static bool Map(T model, IRow dagentRow, string[] validColumnNames, string prefixColumnName, Expression<Func<T, object>>[] ignorePropertyExpressions)
         {
             Dictionary<string, MemberInfo> ignoreMemberMap = default(Dictionary<string, MemberInfo>);
             if (ignorePropertyExpressions != null && ignorePropertyExpressions.Length > 0)
             {
                 ignoreMemberMap = ExpressionParser.GetMemberInfoMap<T>(ignorePropertyExpressions);
             }
-
-            bool existValidColumnName = true;
+            
             bool existData = false;
 
+            if (validColumnNames == null) validColumnNames = new string[0];
+            if (ignorePropertyExpressions == null) ignorePropertyExpressions = new Expression<Func<T, object>>[0];
+
             Dictionary<string, string> columnMap = new Dictionary<string, string>();
+            Dictionary<string, bool> validColumnNameMap = new Dictionary<string, bool>();            
+
+            foreach (string validColumnName in validColumnNames)
+            {
+                validColumnNameMap[validColumnName] = true;
+            }
 
             for (int i = 0; i < dagentRow.ColumnCount; i++)
             {
@@ -56,11 +64,11 @@ namespace Dagent.Library
                     columnMap[columnName] = columnName;
                 }
 
-                if (!string.IsNullOrEmpty(prefix))
+                if (!string.IsNullOrEmpty(prefixColumnName))
                 {
-                    if (columnName.Length > prefix.Length && columnName.Substring(0, prefix.Length) == prefix)
+                    if (columnName.Length > prefixColumnName.Length && columnName.Substring(0, prefixColumnName.Length) == prefixColumnName)
                     {
-                        columnName = columnName.Substring(prefix.Length, columnName.Length - prefix.Length);
+                        columnName = columnName.Substring(prefixColumnName.Length, columnName.Length - prefixColumnName.Length);
                     }
                     else
                     {
@@ -78,10 +86,10 @@ namespace Dagent.Library
                 if (CanChangeType(value, setterDelegateSet.Property.PropertyType) && (ignoreMemberMap == null || !ignoreMemberMap.ContainsKey(setterDelegateSet.Property.Name)))
                 {
                     if (value.GetType() == typeof(DBNull) || value == null)
-                    {
-                        if (!string.IsNullOrEmpty(validColumnName) && originalColumnName == validColumnName)                        
+                    {   
+                        if (validColumnNameMap.ContainsKey(originalColumnName))
                         {
-                            existValidColumnName = false;
+                            validColumnNameMap[originalColumnName] = false;
                         }
                     }
                     else
@@ -100,8 +108,8 @@ namespace Dagent.Library
                 }
             }
 
-            if (!existValidColumnName)
-            {
+            if (validColumnNameMap.Count > 0 && validColumnNameMap.All(x => x.Value == false))
+            {                
                 return false;
             }
             else if (!existData)
