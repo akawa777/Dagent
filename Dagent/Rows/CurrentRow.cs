@@ -13,20 +13,14 @@ namespace Dagent.Rows
 {
     internal class CurrentRow : Row, ICurrentRow
     {
-        public CurrentRow(Row row)
-            : base(row)
+        public CurrentRow(Row row, bool canSetValue)
+            : base(row, canSetValue)
         {
 
         }
 
-        public CurrentRow(Type[] columnTypes, string[] columnNames, object[] values, params string[] uniqueKeys)
-            : base(columnTypes, columnNames, values, uniqueKeys)
-        {
-            
-        }
-
-        public CurrentRow(IDataReader dataReader, params string[] uniqueKeys)
-            : base(dataReader, uniqueKeys)
+        public CurrentRow(IDataReader dataReader)
+            : base(dataReader)
         {
 
         }

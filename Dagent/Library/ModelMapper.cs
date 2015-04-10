@@ -23,7 +23,7 @@ namespace Dagent.Library
 
         private static Dictionary<string, SetterDelegateSet> setterDelegateSetMap = new Dictionary<string, SetterDelegateSet>();
 
-        private struct SetterDelegateSet
+        private class SetterDelegateSet
         {
             public PropertyInfo Property { get; set; }            
             public Action<T, object> Setter { get; set; }
@@ -76,7 +76,7 @@ namespace Dagent.Library
                     }
                 }
 
-                SetterDelegateSet setterDelegateSet = default(SetterDelegateSet);
+                SetterDelegateSet setterDelegateSet;
                 if (!setterDelegateSetMap.TryGetValue(columnName, out setterDelegateSet))
                 {
                     continue;
@@ -85,7 +85,7 @@ namespace Dagent.Library
                 object value = dagentRow[i];
                 if (CanChangeType(value, setterDelegateSet.Property.PropertyType) && (ignoreMemberMap == null || !ignoreMemberMap.ContainsKey(setterDelegateSet.Property.Name)))
                 {
-                    if (value.GetType() == typeof(DBNull) || value == null)
+                    if (value == DBNull.Value)
                     {   
                         if (validColumnNameMap.ContainsKey(originalColumnName))
                         {

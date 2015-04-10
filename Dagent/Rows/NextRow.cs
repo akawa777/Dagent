@@ -10,12 +10,12 @@ using System.Data.Common;
 
 namespace Dagent.Rows
 {
-    internal class NextRow : Row, INextRow
-    {
-        public NextRow(Row row)
-            : base(row)
-        {
+    //internal class NextRow : Row, INextRow
+    //{
+    //    public NextRow(Row row)
+    //        : base(row)
+    //    {
 
-        }
-    }
+    //    }
+    //}
 }

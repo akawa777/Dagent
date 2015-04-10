@@ -13,7 +13,7 @@ namespace Dagent.Library
         private static readonly Dictionary<string, Action<T, object>> setterCache = new Dictionary<string, Action<T, object>>();
         public static Action<T, object> CreateSetMethod(PropertyInfo propertyInfo)
         {
-            Action<T, object> setterAction = null;
+            Action<T, object> setterAction;            
 
             if (setterCache.TryGetValue(propertyInfo.Name, out setterAction))
             {
@@ -55,7 +55,7 @@ namespace Dagent.Library
             /*
             * Create the delegate and return it
             */
-            setterAction = (Action<T, object>)setter.CreateDelegate(typeof(Action<T, object>));
+            setterAction = setter.CreateDelegate(typeof(Action<T, object>)) as Action<T, object>;
 
             setterCache[propertyInfo.Name] = setterAction;
 
@@ -65,7 +65,7 @@ namespace Dagent.Library
         private static readonly Dictionary<string, Func<T, object>> getterCache = new Dictionary<string, Func<T, object>>();
         public static Func<T, object> CreateGetMethod(PropertyInfo propertyInfo)
         {
-            Func<T, object> getterFunc = null;
+            Func<T, object> getterFunc;
 
             if (getterCache.TryGetValue(propertyInfo.Name, out getterFunc))
             {
@@ -105,7 +105,7 @@ namespace Dagent.Library
             /*
              * Create the delegate and return it
              */
-            getterFunc = (Func<T, object>)getter.CreateDelegate(typeof(Func<T, object>));
+            getterFunc = getter.CreateDelegate(typeof(Func<T, object>)) as Func<T, object>;
 
             getterCache[propertyInfo.Name] = getterFunc;
 
@@ -118,7 +118,7 @@ namespace Dagent.Library
         private static readonly Dictionary<string, Action<T, P>> setterCache = new Dictionary<string, Action<T, P>>();
         public static Action<T, P> CreateSetMethod(PropertyInfo propertyInfo)
         {
-            Action<T, P> setterAction = null;
+            Action<T, P> setterAction;
 
             if (setterCache.TryGetValue(propertyInfo.Name, out setterAction))
             {
@@ -161,7 +161,7 @@ namespace Dagent.Library
             /*
             * Create the delegate and return it
             */
-            setterAction = (Action<T, P>)setter.CreateDelegate(typeof(Action<T, P>));
+            setterAction = setter.CreateDelegate(typeof(Action<T, P>)) as Action<T, P> ;
 
             setterCache[propertyInfo.Name] = setterAction;
 
@@ -171,7 +171,7 @@ namespace Dagent.Library
         private static readonly Dictionary<string, Func<T, P>> getterCache = new Dictionary<string, Func<T, P>>();
         public static Func<T, P> CreateGetMethod(PropertyInfo propertyInfo)
         {
-            Func<T, P> getterFunc = null;
+            Func<T, P> getterFunc;
 
             if (getterCache.TryGetValue(propertyInfo.Name, out getterFunc))
             {
@@ -211,7 +211,7 @@ namespace Dagent.Library
             /*
              * Create the delegate and return it
              */
-            getterFunc = (Func<T, P>)getter.CreateDelegate(typeof(Func<T, P>));
+            getterFunc = getter.CreateDelegate(typeof(Func<T, P>)) as Func<T, P>;
 
             getterCache[propertyInfo.Name] = getterFunc;
 

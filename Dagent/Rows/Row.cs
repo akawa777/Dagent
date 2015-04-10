@@ -14,45 +14,17 @@ namespace Dagent.Rows
 
     public abstract class Row : IRow, IRowCompare, IRowModelMapper, IRowPropertyMapDefine
     {
-        public Row(Row row)
+        public Row(Row row, bool canSetValue)
         {
             columnCount = row.columnCount;
             columnTypes = row.columnTypes;
             columnNames = row.columnNames;
             values = new object[columnCount];
-            Array.Copy(row.values, values, values.Length);
-            valueMap = row.valueMap;
-            uniqueKeyIndexes = row.uniqueKeyIndexes;
+            if (canSetValue) Array.Copy(row.values, values, values.Length);
+            valueMap = row.valueMap;            
         }
 
-        public Row(Type[] columnTypes, string[] columnNames, object[] values, params string[] uniqueKeys)
-        {
-            columnCount = columnNames.Length;
-
-            this.columnTypes = columnTypes;
-            this.columnNames = columnNames;
-            this.values = values;
-
-            valueMap = new Dictionary<string, int>();
-            uniqueKeyIndexes = new int[uniqueKeys.Length];
-            int uniqueKeyCount = 0;
-
-            for (int i = 0; i < columnCount; i++)
-            {
-                if (!valueMap.ContainsKey(columnNames[i]))
-                {
-                    valueMap[columnNames[i]] = i;
-                }
-
-                if (uniqueKeys != null && uniqueKeys.Any(x => x == columnNames[i]))
-                {
-                    uniqueKeyIndexes[uniqueKeyCount] = i;
-                    uniqueKeyCount++;
-                }
-            }
-        }
-
-        public Row(IDataReader dataReader, params string[] uniqueKeys)
+        public Row(IDataReader dataReader)
         {
             columnCount = dataReader.FieldCount;
             columnTypes = new Type[columnCount];
@@ -72,23 +44,15 @@ namespace Dagent.Rows
                 if (!valueMap.ContainsKey(columnNames[i]))
                 {
                     valueMap[columnNames[i]] = i;
-                }                
-
-                if (uniqueKeys != null && uniqueKeys.Any(x => x == columnNames[i]))
-                {
-                    uniqueKeyIndexList.Add(i);                    
-                }
+                } 
             }
-
-            uniqueKeyIndexes = uniqueKeyIndexList.ToArray();
         }
 
         private int columnCount;
         private Type[] columnTypes;
         private string[] columnNames;
         protected object[] values;
-        private Dictionary<string, int> valueMap;
-        private int[] uniqueKeyIndexes;
+        private Dictionary<string, int> valueMap;        
 
         public int ColumnCount
         {
@@ -108,11 +72,6 @@ namespace Dagent.Rows
         public int GetOrdinal(string columnName)
         {
             return valueMap[columnName];
-        }
-
-        public int[] GetUniqueKeyIndexes()
-        {
-            return uniqueKeyIndexes;
         }
 
         public T Get<T>(string columnName)
@@ -309,16 +268,18 @@ namespace Dagent.Rows
 
                 Func<T, List<P>> getMethod = DynamicMethodBuilder<T, List<P>>.CreateGetMethod(property);
 
-                if (getMethod(model) == null)
+                List<P> list = getMethod(model);                
+
+                if (list == null)
                 {
-                    DynamicMethodBuilder<T, List<P>>.CreateSetMethod(property)(model, new List<P>());
+                    list = new List<P>();
+                    DynamicMethodBuilder<T, List<P>>.CreateSetMethod(property)(model, list);
                 }
 
-                P value = null;
+                P value;
 
-                if (row.PrevRow != null && uniqueColumnNames.Length > 0 && row.Compare(row.PrevRow, uniqueColumnNames))
-                {
-                    List<P> list = getMethod(model);
+                if (list.Count != 0 && row.PrevRow != null && uniqueColumnNames.Length > 0 && row.Compare(row.PrevRow, uniqueColumnNames))
+                {   
                     value = list[list.Count - 1];
 
                     if (mapAction != null)
@@ -338,8 +299,8 @@ namespace Dagent.Rows
                     }
 
                     if (success)
-                    {                        
-                        getMethod(model).Add(value);
+                    {
+                        list.Add(value);
 
                         if (mapAction != null)
                         {

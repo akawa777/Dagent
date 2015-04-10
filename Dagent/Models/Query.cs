@@ -95,15 +95,7 @@ namespace Dagent.Models
                     bool firstRow = true;
                     bool canYeld = sliceNo == 0 ? true : false;
 
-                    QueryOption<T> option = new QueryOption<T>
-                    {
-                        AutoMapping = queryOption.AutoMapping,
-                        IgnorePropertyExpressions = queryOption.IgnorePropertyExpressions,
-                        MapAction = queryOption.MapAction,
-                        Parameters = queryOption.Parameters,
-                        PrefixColumnName = queryOption.PrefixColumnName,
-                        UniqueColumnNames = queryOption.UniqueColumnNames
-                    };
+                    QueryOption<T> option = null;  
 
                     List<CurrentRow> currentRows = new List<CurrentRow>();
                     
@@ -111,21 +103,31 @@ namespace Dagent.Models
                     {
                         if (firstRow)
                         {
-                            currentRow = new CurrentRow(reader, queryOption.UniqueColumnNames);                            
-                            firstRow = false;
-                            currentRows = new List<CurrentRow>();
+                            currentRow = new CurrentRow(reader);                            
+                            firstRow = false;                            
                         }
                         else
                         {
-                            prevRow = new CurrentRow(currentRow);
+                            prevRow = new CurrentRow(currentRow, true);
 
-                            currentRow = new CurrentRow(reader, queryOption.UniqueColumnNames);
+                            currentRow = new CurrentRow(currentRow, false);
+                            reader.GetValues(currentRow.Values);
                             currentRow.PrevRow = prevRow;
 
                             requestNewModel = queryOption.UniqueColumnNames.Length == 0 ? true : !currentRow.Compare(currentRow.PrevRow, queryOption.UniqueColumnNames);
                             
                             if (canYeld && requestNewModel)
                             {
+                                option = new QueryOption<T>
+                                {
+                                    AutoMapping = queryOption.AutoMapping,
+                                    IgnorePropertyExpressions = queryOption.IgnorePropertyExpressions,
+                                    MapAction = queryOption.MapAction,
+                                    Parameters = queryOption.Parameters,
+                                    PrefixColumnName = queryOption.PrefixColumnName,
+                                    UniqueColumnNames = queryOption.UniqueColumnNames
+                                };
+
                                 yield return GetModel(model, option, currentRows);
                                 currentRows = new List<CurrentRow>();
                             }
@@ -166,6 +168,16 @@ namespace Dagent.Models
                             break;
                         }
                     }
+
+                    option = new QueryOption<T>
+                    {
+                        AutoMapping = queryOption.AutoMapping,
+                        IgnorePropertyExpressions = queryOption.IgnorePropertyExpressions,
+                        MapAction = queryOption.MapAction,
+                        Parameters = queryOption.Parameters,
+                        PrefixColumnName = queryOption.PrefixColumnName,
+                        UniqueColumnNames = queryOption.UniqueColumnNames
+                    };
 
                     yield return GetModel(model, option, currentRows);
                 }

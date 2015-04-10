@@ -52,7 +52,7 @@ namespace Dagent.Library
         public static MemberInfo GetMemberInfo<T>(Expression<Func<T, object>> expression)
         {           
             
-            MemberExpression memberExpression = null;            
+            MemberExpression memberExpression;            
 
             if (MemberExpressionCache<T>.Map.TryGetValue(expression.Body.ToString().Split('.')[1], out memberExpression))
             {
@@ -83,7 +83,7 @@ namespace Dagent.Library
 
         public static MemberInfo GetMemberInfo<T, P>(Expression<Func<T, P>> expression)
         {
-            MemberExpression memberExpression = null;
+            MemberExpression memberExpression;
 
             if (MemberExpressionCache<T>.Map.TryGetValue(expression.Body.ToString().Split('.')[1], out memberExpression))
             {

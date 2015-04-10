@@ -27,7 +27,7 @@ namespace Dagent.Models
             {
                 foreach (string key in primaryKeys)
                 {
-                    PropertyInfo property = null;
+                    PropertyInfo property;
                     if (PropertyCache<T>.Map.TryGetValue(key, out property))
                     {
                         this.commandOption.PrimaryKeys[key] = DynamicMethodBuilder<T>.CreateGetMethod(property);
