@@ -1,0 +1,8 @@
+﻿<?xml version="1.0"?>
+<Class_Language xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <TableTab>Tables</TableTab>
+  <ViewTab>Views</ViewTab>
+  <Openning>%1 is Openning.</Openning>
+  <SaveMsg>Changes have been made to the %1.\nDo you want to save the changes?</SaveMsg>
+  <LngChangeMsg>言語設定を有効にするにはPupSQLiteを再起動してください。</LngChangeMsg>
+</Class_Language>
