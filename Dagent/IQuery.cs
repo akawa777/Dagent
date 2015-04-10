@@ -13,7 +13,7 @@ namespace Dagent
     public interface IQuery<T> where T : class, new()
     {
         T Single();
-        List<T> List();        
+        List<T> List();
         List<T> Page(int pageNo, int noPerPage, out int count);        
         int Count();
         V Scalar<V>();
@@ -24,6 +24,6 @@ namespace Dagent
         IQuery<T> Parameters(object parameters);
         IQuery<T> Each(Action<T, ICurrentRow> mapAction);
         IQuery<T> Auto(bool autoMapping);
-        IQuery<T> Ignore(params Expression<Func<T, object>>[] ignorePropertyExpressions);        
+        IQuery<T> Ignore(params Expression<Func<T, object>>[] ignorePropertyExpressions);
     }
 }

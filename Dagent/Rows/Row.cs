@@ -171,9 +171,9 @@ namespace Dagent.Rows
         }
 
         public bool Compare(IRow dagentRow, params string[] columnNames)
-        {
+        {            
             foreach (string columnName in columnNames)
-            {
+            {   
                 if (this[columnName] == null && dagentRow[columnName] != null)
                 {
                     return false;
@@ -191,11 +191,11 @@ namespace Dagent.Rows
             return true;
         }
 
-        public T Map<T>(string prefixColumnName, params Expression<Func<T, object>>[] ignorePropertyExpressions) where T : class, new()
+        public T Map<T>(string[] validColumnNames, string prefixColumnName, Expression<Func<T, object>>[] ignorePropertyExpressions) where T : class, new()
         {
             T model = new T();
 
-            bool success = ModelMapper<T>.Map(model, this, new string[0], prefixColumnName, ignorePropertyExpressions);
+            bool success = ModelMapper<T>.Map(model, this, validColumnNames, prefixColumnName, ignorePropertyExpressions);
 
             if (success)
             {
@@ -242,6 +242,30 @@ namespace Dagent.Rows
             this.validColumnNames = validColumnNames;
         }
 
+        public RowPropertyMapper<T, P> SetRowPropertyMapper(T model, Row row, Expression<Func<T, P>> targetPropertyExpression, string[] validColumnNames)
+        {
+            this.model = model;
+            this.row = row;
+            this.targetPropertyExpression = targetPropertyExpression;
+            this.validColumnNames = validColumnNames;
+
+            this.targetListPropertyExpression = null;
+
+            return this;
+        }
+
+        public RowPropertyMapper<T, P> SetRowPropertyMapper(T model, Row row, Expression<Func<T, List<P>>> targetListPropertyExpression, string[] validColumnNames)
+        {
+            this.model = model;
+            this.row = row;
+            this.targetListPropertyExpression = targetListPropertyExpression;
+            this.validColumnNames = validColumnNames;
+
+            this.targetPropertyExpression = null;
+
+            return this;
+        }
+
         private T model;
         private Row row;
         private Expression<Func<T, P>> targetPropertyExpression;
@@ -270,8 +294,8 @@ namespace Dagent.Rows
                 if (success)
                 {
                     PropertyInfo property = PropertyCache<T>.Map[ExpressionParser.GetMemberInfo(targetPropertyExpression).Name];
-
-                    DynamicMethodBuilder<T>.CreateSetMethod(property)(model, value);
+                    
+                    DynamicMethodBuilder<T, P>.CreateSetMethod(property)(model, value);
 
                     if (mapAction != null)
                     {
@@ -283,18 +307,18 @@ namespace Dagent.Rows
             {
                 PropertyInfo property = PropertyCache<T>.Map[ExpressionParser.GetMemberInfo(targetListPropertyExpression).Name];
 
-                Func<T, object> getMethod = DynamicMethodBuilder<T>.CreateGetMethod(property);
+                Func<T, List<P>> getMethod = DynamicMethodBuilder<T, List<P>>.CreateGetMethod(property);
 
                 if (getMethod(model) == null)
                 {
-                    DynamicMethodBuilder<T>.CreateSetMethod(property)(model, Activator.CreateInstance(property.PropertyType));
+                    DynamicMethodBuilder<T, List<P>>.CreateSetMethod(property)(model, new List<P>());
                 }
 
                 P value = null;
 
                 if (row.PrevRow != null && uniqueColumnNames.Length > 0 && row.Compare(row.PrevRow, uniqueColumnNames))
                 {
-                    List<P> list = getMethod(model) as List<P>;
+                    List<P> list = getMethod(model);
                     value = list[list.Count - 1];
 
                     if (mapAction != null)
@@ -314,8 +338,8 @@ namespace Dagent.Rows
                     }
 
                     if (success)
-                    {
-                        (getMethod(model) as List<P>).Add(value);
+                    {                        
+                        getMethod(model).Add(value);
 
                         if (mapAction != null)
                         {

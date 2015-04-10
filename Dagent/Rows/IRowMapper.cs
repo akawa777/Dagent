@@ -13,7 +13,7 @@ namespace Dagent.Rows
 {  
     public interface IRowModelMapper
     {
-        T Map<T>(string prefixColumnName, params Expression<Func<T, object>>[] ignorePropertyExpressions) where T : class, new();
+        T Map<T>(string[] validColumnNames, string prefixColumnName, Expression<Func<T, object>>[] ignorePropertyExpressions) where T : class, new();
     }
 
     public interface IRowPropertyMapDefine

@@ -7,6 +7,7 @@ using System.Data.Entity;
 using System.Data.EntityClient;
 using System.Linq.Expressions;
 using Dagent.Models;
+using Dapper;
 
 namespace Dagent.Tests
 {
@@ -51,8 +52,8 @@ namespace Dagent.Tests
         [TestMethod]
         public void GetStarted()
         {            
-            IDagentDatabase database = new DagentDatabase("SQLite");            
-            
+            IDagentDatabase database = new DagentDatabase("SQLite");
+
             Customer customer = database.Query<Customer>("customers", new { customerId = 1 }).Single();
 
             Assert.AreEqual(1, customer.customerId);
@@ -121,10 +122,60 @@ namespace Dagent.Tests
         }
 
         [TestMethod]
+        public void DagentTest()
+        {
+            IDagentDatabase database = new DagentDatabase("SQLite");
+
+            var customers = database.Query<Customer>("select * from customers").List();
+
+            Assert.AreEqual(10000, customers.Count);
+
+            foreach (var customer in customers)
+            {
+                Assert.AreEqual(true, customer.customerId != 0);
+                Assert.AreEqual(false, string.IsNullOrEmpty(customer.name));
+            }
+        }
+
+        [TestMethod]
+        public void DapperTest()
+        {
+            IDagentDatabase database = new DagentDatabase("SQLite");
+
+            var customers = database.Connection.Query<Customer>("select * from customers", null).ToList();
+
+            Assert.AreEqual(10000, customers.Count);
+
+            foreach (var customer in customers)
+            {
+                Assert.AreEqual(true, customer.customerId != 0);
+                Assert.AreEqual(false, string.IsNullOrEmpty(customer.name));
+            }
+        }
+
+        [TestMethod]
+        public void NpocoTest()
+        {
+            IDagentDatabase database = new DagentDatabase("SQLite");
+            NPoco.IDatabase db = new NPoco.Database(database.Connection);
+
+            var customers = db.Fetch<Customer>("select * from customers");            
+
+            Assert.AreEqual(10000, customers.Count);
+
+            foreach (var customer in customers)
+            {
+                Assert.AreEqual(true, customer.customerId != 0);
+                Assert.AreEqual(false, string.IsNullOrEmpty(customer.name));
+            }
+        }
+
+        [TestMethod]
         public void Fetch()
         {
-            IDagentDatabase database = new DagentDatabase("SQLite");            
-            List<Customer> customers = database.Query<Customer>(@"
+            IDagentDatabase database = new DagentDatabase("SQLite");
+
+            var customers = database.Query<Customer>(@"
                 select 
                     *
                 from 
@@ -135,11 +186,17 @@ namespace Dagent.Tests
                     c.customerId = cp.customerId                 
 	            order by 
                     c.customerId, cp.no")
-                .Unique("customerId")                                
+                .Unique("customerId")
                 .Each((model, row) => row.Map(model, x => x.CustomerPurchases, "no").Do())
+                //.Each((model, row) =>
+                //{
+                //    if (model.CustomerPurchases == null) model.CustomerPurchases = new List<CustomerPurchase>();
+
+                //    model.CustomerPurchases.Add(row.Map<CustomerPurchase>(null, null, null));
+                //})
                 .List();
 
-            ValidList(customers);            
+            ValidList(customers);
         }
 
         [TestMethod]
@@ -161,11 +218,20 @@ namespace Dagent.Tests
                     c.customerId = cp.customerId                 
 	            order by 
                     c.customerId, cp.no")
-                .Unique("customerId")                
-                .Each((model, row) => {
+                .Unique("customerId")
+                .Each((model, row) =>
+                {
                     row.Map(model, x => x.Business, "businessName").Do();
                     row.Map(model, x => x.CustomerPurchases, "no").Do();
                 })
+                //.Each((model, row) =>
+                //{
+                //    if (model.CustomerPurchases == null) model.CustomerPurchases = new List<CustomerPurchase>();
+
+                //    model.CustomerPurchases.Add(row.Map<CustomerPurchase>(null, null, null));
+
+                //    model.Business = row.Map<Business>(null, null, null);
+                //})
                 .List();
 
             ValidList(customers);
@@ -513,12 +579,12 @@ namespace Dagent.Tests
                     c.customerId, cp.no")
                 .Unique("customerId")
                 .Each((model, row) => row.Map(model, x => x.CustomerPurchases, "cp_customerId").Prefix("cp_").Do())
-                .Page(100, 10, out count);
+                .Page(100, 10, out count).ToList();
 
             Assert.AreEqual(10, customers.Count);
             Assert.AreEqual(10000, count);
-            Assert.AreEqual(991, customers.First().customerId);
-            Assert.AreEqual(1000, customers.Last().customerId);
+            Assert.AreEqual(1001, customers.First().customerId);
+            Assert.AreEqual(1010, customers.Last().customerId);
 
             foreach (var customer in customers)
             {

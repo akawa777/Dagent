@@ -39,6 +39,12 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Dapper">
+      <HintPath>..\packages\Dapper.1.40\lib\net35\Dapper.dll</HintPath>
+    </Reference>
+    <Reference Include="NPoco">
+      <HintPath>..\packages\NPoco.2.7.93\lib\net35\NPoco.dll</HintPath>
+    </Reference>
     <Reference Include="SqlParser">
       <HintPath>..\packages\SqlPerser\SqlParser.dll</HintPath>
     </Reference>

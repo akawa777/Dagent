@@ -58,22 +58,22 @@ namespace Dagent.Models
         {
             using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel.Connection))
             {
-                 count = Count();
-                return List((pageNo - 1) * noPerPage, noPerPage);
+                count = Count();
+                return List((pageNo) * noPerPage, noPerPage).ToList();
             }            
         }
 
         public virtual List<T> List()
         {            
-            return List(0, 0);
+            return List(0, 0).ToList();
         }
 
         public virtual T Single()
         {
             return List(0, 1).FirstOrDefault();
         }
-
-        protected virtual List<T> List(int sliceIndex, int sliceCount)
+        
+        protected virtual IEnumerable<T> List(int sliceIndex, int sliceNo)
         {
             using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel.Connection))
             {
@@ -83,77 +83,106 @@ namespace Dagent.Models
                 using (DbDataReader reader = command.ExecuteReader())
                 {                    
                     int uniqueRowIndex = -1;
+                    int sliceCount = 0;
 
                     T model = default(T);
+                    
                     bool requestNewModel = true;
 
-                    CurrentRow currentRow = null;                                        
+                    CurrentRow currentRow = null;
+                    CurrentRow prevRow = null;                                        
 
                     bool firstRow = true;
+                    bool canYeld = sliceNo == 0 ? true : false;
+
+                    QueryOption<T> option = new QueryOption<T>
+                    {
+                        AutoMapping = queryOption.AutoMapping,
+                        IgnorePropertyExpressions = queryOption.IgnorePropertyExpressions,
+                        MapAction = queryOption.MapAction,
+                        Parameters = queryOption.Parameters,
+                        PrefixColumnName = queryOption.PrefixColumnName,
+                        UniqueColumnNames = queryOption.UniqueColumnNames
+                    };
+
+                    List<CurrentRow> currentRows = new List<CurrentRow>();
                     
                     while (reader.Read())
                     {
                         if (firstRow)
                         {
-                            currentRow = new CurrentRow(reader, queryOption.UniqueColumnNames);
+                            currentRow = new CurrentRow(reader, queryOption.UniqueColumnNames);                            
                             firstRow = false;
+                            currentRows = new List<CurrentRow>();
                         }
                         else
                         {
-                            if (currentRow.PrevRow == null)
-                            {
-                                currentRow.PrevRow = new CurrentRow(currentRow);
-                            }
-                            else
-                            {   
-                                currentRow.PrevRow.SetValue(currentRow.Values);
-                            }
+                            prevRow = new CurrentRow(currentRow);
 
-                            object[] nextValues = new object[reader.FieldCount];                                                        
-                            reader.GetValues(nextValues);
-
-                            currentRow.SetValue(nextValues);
+                            currentRow = new CurrentRow(reader, queryOption.UniqueColumnNames);
+                            currentRow.PrevRow = prevRow;
 
                             requestNewModel = queryOption.UniqueColumnNames.Length == 0 ? true : !currentRow.Compare(currentRow.PrevRow, queryOption.UniqueColumnNames);
-                        }                 
+                            
+                            if (canYeld && requestNewModel)
+                            {
+                                yield return GetModel(model, option, currentRows);
+                                currentRows = new List<CurrentRow>();
+                            }
+                        }
 
-                        if (sliceCount != 0)
+                        if (sliceNo != 0)
                         {
                             if (requestNewModel) uniqueRowIndex++;
 
                             if (sliceIndex > uniqueRowIndex)
                             {
+                                canYeld = false;
                                 continue;
                             }
-                            else if (requestNewModel && sliceCount > 0 && models.Count >= sliceCount)
+                            else if (requestNewModel)
                             {
-                                break;
+                                canYeld = true;
+                                sliceCount++;
                             }
                         }
+
+                        currentRows.Add(currentRow);                        
 
                         if (requestNewModel)
                         {   
                             if (queryOption.AutoMapping)
                             {   
-                                model = currentRow.Map<T>(queryOption.PrefixColumnName, queryOption.IgnorePropertyExpressions);                                
+                                model = currentRow.Map<T>(new string[0], queryOption.PrefixColumnName, queryOption.IgnorePropertyExpressions);                                
                             }
                             else
                             {
                                 model = new T();
                             }
+                        }
 
-                            models.Add(model);                            
-                        }                        
-
-                        if (queryOption.MapAction != null)
+                        if (sliceNo != 0 && sliceNo == sliceCount)
                         {
-                            queryOption.MapAction(model, currentRow);                               
+                            break;
                         }
                     }
 
-                    return models;
+                    yield return GetModel(model, option, currentRows);
                 }
             }
+        }
+
+        private T GetModel (T model, QueryOption<T> queryOption, List<CurrentRow> currentRows)
+        {
+            if (queryOption.MapAction != null)
+            {
+                foreach (CurrentRow currentRow in currentRows)
+                {
+                    queryOption.MapAction(model, currentRow);    
+                }   
+            }
+
+            return model;
         }
 
         public virtual V Scalar<V>()

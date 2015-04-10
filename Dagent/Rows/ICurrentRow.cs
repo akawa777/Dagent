@@ -10,7 +10,7 @@ using System.Data.Common;
 
 namespace Dagent.Rows
 {
-    public interface ICurrentRow : IBaseRow, IRowPropertyMapDefine
+    public interface ICurrentRow : IBaseRow, IRowModelMapper, IRowPropertyMapDefine
     {
        
     }
