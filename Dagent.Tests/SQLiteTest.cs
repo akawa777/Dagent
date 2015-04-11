@@ -86,7 +86,7 @@ namespace Dagent.Tests
         [TestMethod]
         public void FetchEach()
         {
-            IDagentDatabase database = new DagentDatabase("SQLite");
+            IDagentDatabase database = new DagentDatabase("SQLite");            
 
             List<Customer> customers = database.Query<Customer>(@"
                         select 
@@ -128,13 +128,15 @@ namespace Dagent.Tests
 
             var customers = database.Query<Customer>("select * from customers").List();
 
-            Assert.AreEqual(10000, customers.Count);
-
-            foreach (var customer in customers)
+            using (var scope = database.ConnectionScope())
             {
-                Assert.AreEqual(true, customer.customerId != 0);
-                Assert.AreEqual(false, string.IsNullOrEmpty(customer.name));
+                foreach (var customer in customers)
+                {
+                    customer.CustomerPurchases = database.Query<CustomerPurchase>("select * from customerPurchases where customerId = @customerId", new { customerId = customer.customerId }).List();
+                }
             }
+
+            ValidList(customers);
         }
 
         [TestMethod]
@@ -144,13 +146,12 @@ namespace Dagent.Tests
 
             var customers = database.Connection.Query<Customer>("select * from customers", null).ToList();
 
-            Assert.AreEqual(10000, customers.Count);
-
             foreach (var customer in customers)
-            {
-                Assert.AreEqual(true, customer.customerId != 0);
-                Assert.AreEqual(false, string.IsNullOrEmpty(customer.name));
+            {                
+                customer.CustomerPurchases = database.Connection.Query<CustomerPurchase>("select * from customerPurchases where customerId = @customerId", new { customerId = customer.customerId}).ToList();
             }
+
+            ValidList(customers);
         }
 
         [TestMethod]
@@ -159,15 +160,14 @@ namespace Dagent.Tests
             IDagentDatabase database = new DagentDatabase("SQLite");
             NPoco.IDatabase db = new NPoco.Database(database.Connection);
 
-            var customers = db.Fetch<Customer>("select * from customers");            
-
-            Assert.AreEqual(10000, customers.Count);
+            var customers = db.Fetch<Customer>("select * from customers");
 
             foreach (var customer in customers)
             {
-                Assert.AreEqual(true, customer.customerId != 0);
-                Assert.AreEqual(false, string.IsNullOrEmpty(customer.name));
+                customer.CustomerPurchases = db.Fetch<CustomerPurchase>("select * from customerPurchases where customerId = @customerId", new { customerId = customer.customerId });
             }
+
+            ValidList(customers);
         }
 
         [TestMethod]
@@ -187,7 +187,7 @@ namespace Dagent.Tests
 	            order by 
                     c.customerId, cp.no")
                 .Unique("customerId")
-                .Each((model, row) => row.Map(model, x => x.CustomerPurchases, "no").Do())
+                .Each((model, row) => row.Map(model, x => x.CustomerPurchases).Do())
                 //.Each((model, row) =>
                 //{
                 //    if (model.CustomerPurchases == null) model.CustomerPurchases = new List<CustomerPurchase>();

@@ -83,9 +83,7 @@ namespace Dagent.Models
                 using (DbDataReader reader = command.ExecuteReader())
                 {                    
                     int uniqueRowIndex = -1;
-                    int sliceCount = 0;
-
-                    T model = default(T);
+                    int sliceCount = 0;                    
                     
                     bool requestNewModel = true;
 
@@ -98,11 +96,14 @@ namespace Dagent.Models
                     QueryOption<T> option = null;  
 
                     List<CurrentRow> currentRows = new List<CurrentRow>();
+
+                    T model = null;
                     
                     while (reader.Read())
                     {
                         if (firstRow)
                         {
+                            model = new T();
                             currentRow = new CurrentRow(reader);                            
                             firstRow = false;                            
                         }
@@ -179,7 +180,10 @@ namespace Dagent.Models
                         UniqueColumnNames = queryOption.UniqueColumnNames
                     };
 
-                    yield return GetModel(model, option, currentRows);
+                    if (model != null)
+                    {
+                        yield return GetModel(model, option, currentRows);
+                    }
                 }
             }
         }

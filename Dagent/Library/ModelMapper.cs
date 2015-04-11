@@ -13,22 +13,6 @@ namespace Dagent.Library
 {
     internal static class ModelMapper<T>
     {
-        static ModelMapper()
-        {
-            foreach (PropertyInfo property in PropertyCache<T>.Map.Values)
-            {
-                setterDelegateSetMap[property.Name] = new SetterDelegateSet { Property = property, Setter = DynamicMethodBuilder<T>.CreateSetMethod(property) };
-            }
-        }
-
-        private static Dictionary<string, SetterDelegateSet> setterDelegateSetMap = new Dictionary<string, SetterDelegateSet>();
-
-        private class SetterDelegateSet
-        {
-            public PropertyInfo Property { get; set; }            
-            public Action<T, object> Setter { get; set; }
-        }
-
         public static bool Map(T model, IRow dagentRow, string[] validColumnNames, string prefixColumnName, Expression<Func<T, object>>[] ignorePropertyExpressions)
         {
             Dictionary<string, MemberInfo> ignoreMemberMap = default(Dictionary<string, MemberInfo>);
@@ -76,14 +60,16 @@ namespace Dagent.Library
                     }
                 }
 
-                SetterDelegateSet setterDelegateSet;
-                if (!setterDelegateSetMap.TryGetValue(columnName, out setterDelegateSet))
+                PropertyInfo property;
+                if (!PropertyCache<T>.Map.TryGetValue(columnName, out property))
                 {
                     continue;
                 }
 
+                Action<T, object> setter = DynamicMethodBuilder<T>.CreateSetMethod(property);                               
+
                 object value = dagentRow[i];
-                if (CanChangeType(value, setterDelegateSet.Property.PropertyType) && (ignoreMemberMap == null || !ignoreMemberMap.ContainsKey(setterDelegateSet.Property.Name)))
+                if (CanChangeType(value, property.PropertyType) && (ignoreMemberMap == null || !ignoreMemberMap.ContainsKey(property.Name)))
                 {
                     if (value == DBNull.Value)
                     {   
@@ -95,14 +81,14 @@ namespace Dagent.Library
                     else
                     {
                         existData = true;
-                        if (Nullable.GetUnderlyingType(setterDelegateSet.Property.PropertyType) != null)
+                        if (Nullable.GetUnderlyingType(property.PropertyType) != null)
                         {
-                            object baseValue = Convert.ChangeType(value, setterDelegateSet.Property.PropertyType.GetGenericArguments()[0]);
-                            setterDelegateSet.Setter(model, baseValue);
+                            object baseValue = Convert.ChangeType(value, property.PropertyType.GetGenericArguments()[0]);
+                            setter(model, baseValue);
                         }
                         else
                         {
-                            setterDelegateSet.Setter(model, Convert.ChangeType(value, setterDelegateSet.Property.PropertyType));
+                            setter(model, Convert.ChangeType(value, property.PropertyType));
                         }
                     }
                 }

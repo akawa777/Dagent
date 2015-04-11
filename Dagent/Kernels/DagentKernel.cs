@@ -263,7 +263,6 @@ namespace Dagent.Kernels
 
             DbType? dbType = GetDbType(value);
             if (dbType.HasValue) dbParameter.DbType = dbType.Value;
-            else return null;
 
             return dbParameter;
         }

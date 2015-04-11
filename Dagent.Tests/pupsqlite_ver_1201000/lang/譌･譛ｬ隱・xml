@@ -1,0 +1,8 @@
+﻿<?xml version="1.0"?>
+<Class_Language xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <TableTab>テーブル一覧</TableTab>
+  <ViewTab>ビュー一覧</ViewTab>
+  <Openning>%1はすでに開いています。</Openning>
+  <SaveMsg>%1は変更されています。\n変更を保存しますか？</SaveMsg>
+  <LngChangeMsg>Please restart PupSQLite to enable the language setting.</LngChangeMsg>
+</Class_Language>

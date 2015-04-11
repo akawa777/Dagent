@@ -72,7 +72,12 @@ namespace Dagent.Models
 
                 foreach (string columnName in updateRow.ColumnNames)
                 {
-                    valueParameters.Add(new KeyValuePair<string, object>(columnName, updateRow[columnName]));
+                    object value = updateRow[columnName];
+                    if (value == null)
+                    {
+                        value = DBNull.Value;
+                    }
+                    valueParameters.Add(new KeyValuePair<string, object>(columnName, value));
                 }
 
                 string sql = "";

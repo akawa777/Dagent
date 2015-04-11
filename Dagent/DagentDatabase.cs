@@ -9,6 +9,7 @@ using System.Reflection;
 using Dagent.Models;
 using Dagent.Kernels;
 using Dagent.Library;
+using System.Linq.Expressions;
 
 namespace Dagent
 {
@@ -145,6 +146,6 @@ namespace Dagent
         public ITransactionScope TransactionScope(IsolationLevel isolationLevel)
         {
             return new TransactionScope(Connection, isolationLevel);
-        }
+        }        
     }
 }

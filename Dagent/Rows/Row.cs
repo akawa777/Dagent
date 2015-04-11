@@ -132,12 +132,12 @@ namespace Dagent.Rows
         public bool Compare(IRow dagentRow, params string[] columnNames)
         {            
             foreach (string columnName in columnNames)
-            {   
-                if (this[columnName] == null && dagentRow[columnName] != null)
+            {
+                if (this[columnName] == DBNull.Value && dagentRow[columnName] != DBNull.Value)
                 {
                     return false;
                 }
-                else if (this[columnName] != null && dagentRow[columnName] == null)
+                else if (this[columnName] != DBNull.Value && dagentRow[columnName] == DBNull.Value)
                 {
                     return false;
                 }
