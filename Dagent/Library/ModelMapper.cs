@@ -13,7 +13,7 @@ namespace Dagent.Library
 {
     internal static class ModelMapper<T>
     {
-        public static bool Map(T model, IRow dagentRow, string[] validColumnNames, string prefixColumnName, Expression<Func<T, object>>[] ignorePropertyExpressions)
+        public static bool Map(T model, IRow dagentRow, string[] validColumnNames, string prefixColumnName, Expression<Func<T, object>>[] ignorePropertyExpressions, ColumnNamePropertyMap columnNamePropertyMap)
         {
             Dictionary<string, MemberInfo> ignoreMemberMap = default(Dictionary<string, MemberInfo>);
             if (ignorePropertyExpressions != null && ignorePropertyExpressions.Length > 0)
@@ -60,8 +60,9 @@ namespace Dagent.Library
                     }
                 }
 
-                PropertyInfo property;
-                if (!PropertyCache<T>.Map.TryGetValue(columnName, out property))
+                PropertyInfo property = columnNamePropertyMap.GetProperty<T>(columnName);
+
+                if (property == null)
                 {
                     continue;
                 }

@@ -18,26 +18,26 @@ namespace Dagent.Models
     internal class Command<T> : ICommand<T>
         where T : class, new()
     {
-        public Command(IDagentKernel dagentKernel, string tableName, params string[] primaryKeys)
+        public Command(IDagentKernel dagentKernel, string tableName, string[] primaryKeys, ColumnNamePropertyMap columnNamePropertyMap)
         {
             this.dagentKernel = dagentKernel;
             this.tableName = tableName;
-            
+
+            this.columnNamePropertyMap = columnNamePropertyMap;
+
             if (primaryKeys != null)
             {
                 foreach (string key in primaryKeys)
                 {
-                    PropertyInfo property;
-                    if (PropertyCache<T>.Map.TryGetValue(key, out property))
-                    {
-                        this.commandOption.PrimaryKeys[key] = DynamicMethodBuilder<T>.CreateGetMethod(property);
-                    }                    
+                    PropertyInfo property = columnNamePropertyMap.GetProperty<T>(key);
+                    this.commandOption.PrimaryKeys[key] = DynamicMethodBuilder<T>.CreateGetMethod(property);                    
                 }
             }
         }
 
         protected IDagentKernel dagentKernel;
-        protected string tableName;        
+        protected string tableName;
+        private ColumnNamePropertyMap columnNamePropertyMap;
 
         protected virtual int Execute(DataRowState rowState, T entity)
         {
@@ -47,12 +47,12 @@ namespace Dagent.Models
 
                 if (commandOption.AutoMapping)
                 {
-                    foreach (var property in PropertyCache<T>.Map.Values)
+                    foreach (var property in typeof(T).GetProperties())
                     {
                         DbType? dbType = dagentKernel.GetDbType(property.PropertyType);
                         if (dbType.HasValue)
                         {
-                            columnValueMap[property.Name] = DynamicMethodBuilder<T>.CreateGetMethod(property)(entity);
+                            columnValueMap[columnNamePropertyMap.GetColumnName<T>(property.Name)] = DynamicMethodBuilder<T>.CreateGetMethod(property)(entity);
                         }
                     }
                 }

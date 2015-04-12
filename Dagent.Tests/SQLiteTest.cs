@@ -42,8 +42,6 @@ namespace Dagent.Tests
         public int customerId { get; set; }
         public int no { get; set; }
         public string content { get; set; }
-
-        public Business Business { get; set; } 
     }
 
     [TestClass]
@@ -613,7 +611,7 @@ namespace Dagent.Tests
 
                 //var customerCommand = database.Command<Customer>("customers", "customerId");
                 //var customerPurchaseCommand = database.Command<CustomerPurchase>("customerPurchases", "customerId", "no");
-                //var businessCommand = database.Command<Business>("business", "businesId");                
+                //var businessCommand = database.Command<Business>("business", "businessId");                
 
                 int businessId = 1;
                 for (int i = 1; i <= customerNo; i++)
@@ -650,7 +648,7 @@ namespace Dagent.Tests
                         businessName = "business_" + i.ToString()
 
                     };
-                    database.Command<Business>("business", "businesId").Insert(business);
+                    database.Command<Business>("business", "businessId").Insert(business);
                 }
 
                 scope.Commit();

@@ -19,8 +19,8 @@ namespace Dagent.Rows
 
         }
 
-        public CurrentRow(IDataReader dataReader)
-            : base(dataReader)
+        public CurrentRow(IDataReader dataReader, ColumnNamePropertyMap columnNamePropertyMap)
+            : base(dataReader, columnNamePropertyMap)
         {
 
         }

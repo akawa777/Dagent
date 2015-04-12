@@ -19,16 +19,20 @@ namespace Dagent.Models
 {
     internal class Query<T> : IQuery<T> where T : class, new()
     {
-        public Query(IDagentKernel dagentKernel, string selectSql, params Parameter[] parameters)
+        public Query(IDagentKernel dagentKernel, string selectSql, Parameter[] parameters, ColumnNamePropertyMap columnNamePropertyMap)
         {
             this.dagentKernel = dagentKernel;
             this.selectSql = selectSql;
-            queryOption.Parameters = parameters == null ? new Parameter[0] : parameters;            
+            queryOption.Parameters = parameters == null ? new Parameter[0] : parameters;
+
+            this.columnNamePropertyMap = columnNamePropertyMap;
         }
 
         protected IDagentKernel dagentKernel;
         protected string selectSql;
-        protected QueryOption<T> queryOption = new QueryOption<T>();        
+        protected QueryOption<T> queryOption = new QueryOption<T>();
+
+        private ColumnNamePropertyMap columnNamePropertyMap;
 
         public virtual int Count()
         {
@@ -104,7 +108,7 @@ namespace Dagent.Models
                         if (firstRow)
                         {
                             model = new T();
-                            currentRow = new CurrentRow(reader);                            
+                            currentRow = new CurrentRow(reader, columnNamePropertyMap);                            
                             firstRow = false;                            
                         }
                         else

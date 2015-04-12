@@ -12,7 +12,7 @@ using System.Data;
 namespace Dagent.Rows
 {
 
-    public abstract class Row : IRow, IRowCompare, IRowModelMapper, IRowPropertyMapDefine
+    internal abstract class Row : IRow, IRowCompare, IRowModelMapper, IRowPropertyMapDefine
     {
         public Row(Row row, bool canSetValue)
         {
@@ -21,14 +21,18 @@ namespace Dagent.Rows
             columnNames = row.columnNames;
             values = new object[columnCount];
             if (canSetValue) Array.Copy(row.values, values, values.Length);
-            valueMap = row.valueMap;            
+            valueMap = row.valueMap;
+
+            columnNamePropertyMap = row.columnNamePropertyMap;
         }
 
-        public Row(IDataReader dataReader)
+        public Row(IDataReader dataReader, ColumnNamePropertyMap columnNamePropertyMap)
         {
             columnCount = dataReader.FieldCount;
             columnTypes = new Type[columnCount];
             columnNames = new string[columnCount];
+
+            this.columnNamePropertyMap = columnNamePropertyMap;
 
             values = new object[columnCount];
             dataReader.GetValues(values);
@@ -150,11 +154,13 @@ namespace Dagent.Rows
             return true;
         }
 
+        private ColumnNamePropertyMap columnNamePropertyMap;
+
         public T Map<T>(string[] validColumnNames, string prefixColumnName, Expression<Func<T, object>>[] ignorePropertyExpressions) where T : class, new()
         {
             T model = new T();
 
-            bool success = ModelMapper<T>.Map(model, this, validColumnNames, prefixColumnName, ignorePropertyExpressions);
+            bool success = ModelMapper<T>.Map(model, this, validColumnNames, prefixColumnName, ignorePropertyExpressions, columnNamePropertyMap);
 
             if (success)
             {
@@ -170,14 +176,14 @@ namespace Dagent.Rows
             where T : class, new()
             where P : class, new()
         {
-            return new RowPropertyMapper<T, P>(model, this, targetPropertyExpression, validColumnNames);
+            return new RowPropertyMapper<T, P>(model, this, targetPropertyExpression, validColumnNames, columnNamePropertyMap);
         }
 
         public IRowPropertyMapper<T, P> Map<T, P>(T model, Expression<Func<T, List<P>>> targetListPropertyExpression, params string[] validColumnNames)
             where T : class, new()
             where P : class, new()
         {
-            return new RowPropertyMapper<T, P>(model, this, targetListPropertyExpression, validColumnNames);
+            return new RowPropertyMapper<T, P>(model, this, targetListPropertyExpression, validColumnNames, columnNamePropertyMap);
         }
     }
 
@@ -185,44 +191,22 @@ namespace Dagent.Rows
         where T : class, new()
         where P : class, new()
     {
-        public RowPropertyMapper(T model, Row row, Expression<Func<T, P>> targetPropertyExpression, string[] validColumnNames)
-        {
-            this.model = model;
-            this.row = row;
-            this.targetPropertyExpression = targetPropertyExpression;
-            this.validColumnNames = validColumnNames;            
-        }
-
-        public RowPropertyMapper(T model, Row row, Expression<Func<T, List<P>>> targetListPropertyExpression, string[] validColumnNames)
-        {
-            this.model = model;
-            this.row = row;
-            this.targetListPropertyExpression = targetListPropertyExpression;
-            this.validColumnNames = validColumnNames;
-        }
-
-        public RowPropertyMapper<T, P> SetRowPropertyMapper(T model, Row row, Expression<Func<T, P>> targetPropertyExpression, string[] validColumnNames)
+        public RowPropertyMapper(T model, Row row, Expression<Func<T, P>> targetPropertyExpression, string[] validColumnNames, ColumnNamePropertyMap columnNamePropertyMap)
         {
             this.model = model;
             this.row = row;
             this.targetPropertyExpression = targetPropertyExpression;
             this.validColumnNames = validColumnNames;
-
-            this.targetListPropertyExpression = null;
-
-            return this;
+            this.columnNamePropertyMap = columnNamePropertyMap;
         }
 
-        public RowPropertyMapper<T, P> SetRowPropertyMapper(T model, Row row, Expression<Func<T, List<P>>> targetListPropertyExpression, string[] validColumnNames)
+        public RowPropertyMapper(T model, Row row, Expression<Func<T, List<P>>> targetListPropertyExpression, string[] validColumnNames, ColumnNamePropertyMap columnNamePropertyMap)
         {
             this.model = model;
             this.row = row;
             this.targetListPropertyExpression = targetListPropertyExpression;
             this.validColumnNames = validColumnNames;
-
-            this.targetPropertyExpression = null;
-
-            return this;
+            this.columnNamePropertyMap = columnNamePropertyMap;
         }
 
         private T model;
@@ -237,6 +221,8 @@ namespace Dagent.Rows
         private bool autoMapping = true;
         private Action<P> mapAction;
 
+        private ColumnNamePropertyMap columnNamePropertyMap;
+
         public void Do()
         {
             if (targetPropertyExpression != null)
@@ -247,12 +233,12 @@ namespace Dagent.Rows
 
                 if (autoMapping)
                 {
-                    success = ModelMapper<P>.Map(value, row, validColumnNames, prefixColumnName, ignorePropertyExpressions);
+                    success = ModelMapper<P>.Map(value, row, validColumnNames, prefixColumnName, ignorePropertyExpressions, columnNamePropertyMap);
                 }
 
                 if (success)
                 {
-                    PropertyInfo property = PropertyCache<T>.Map[ExpressionParser.GetMemberInfo(targetPropertyExpression).Name];
+                    PropertyInfo property = PropertyCache<T>.GetProperty(ExpressionParser.GetMemberInfo(targetPropertyExpression).Name);
                     
                     DynamicMethodBuilder<T, P>.CreateSetMethod(property)(model, value);
 
@@ -264,7 +250,7 @@ namespace Dagent.Rows
             }
             else
             {
-                PropertyInfo property = PropertyCache<T>.Map[ExpressionParser.GetMemberInfo(targetListPropertyExpression).Name];
+                PropertyInfo property = PropertyCache<T>.GetProperty(ExpressionParser.GetMemberInfo(targetListPropertyExpression).Name);
 
                 Func<T, List<P>> getMethod = DynamicMethodBuilder<T, List<P>>.CreateGetMethod(property);
 
@@ -295,7 +281,7 @@ namespace Dagent.Rows
 
                     if (autoMapping)
                     {
-                        success = ModelMapper<P>.Map(value, row, validColumnNames, prefixColumnName, ignorePropertyExpressions);
+                        success = ModelMapper<P>.Map(value, row, validColumnNames, prefixColumnName, ignorePropertyExpressions, columnNamePropertyMap);
                     }
 
                     if (success)
