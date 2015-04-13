@@ -8,7 +8,9 @@ $mainProject = $project + ".csproj";
 
 $directory = Split-Path $script:myInvocation.MyCommand.path -parent
 
-Remove-Item $directory\Release -Force -ErrorAction Ignore -Recurse
+$releaseDirectory = "ReleaseDlls"
+
+Remove-Item $directory\$releaseDirectory -Force -ErrorAction Ignore -Recurse
 
 $directory = $directory + "\Dagent"
 
@@ -20,7 +22,7 @@ foreach($version in $netVersions)
 
     $verText = $text.Replace("<TargetFrameworkVersion>v3.5</TargetFrameworkVersion>", "<TargetFrameworkVersion>" + $version + "</TargetFrameworkVersion>")
     $verText = $verText.Replace("<DebugType>pdbonly</DebugType>", "")    
-    $verText = $verText.Replace("<OutputPath>bin\Release\</OutputPath>", "<OutputPath>..\Release\" + $versionName + "\</OutputPath>")
+    $verText = $verText.Replace("<OutputPath>bin\Release\</OutputPath>", "<OutputPath>..\$releaseDirectory\" + $versionName + "\</OutputPath>")
 
     $verProject = $project + "." + $versionName + ".csproj";
 
