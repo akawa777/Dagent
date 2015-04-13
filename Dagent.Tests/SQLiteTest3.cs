@@ -66,12 +66,12 @@ namespace Dagent.Tests3
 
             using (var scope = db.TransactionScope())
             {
-                db.ExequteNonQuery("delete from Entity1");
-                db.ExequteNonQuery("delete from Entity2");
-                db.ExequteNonQuery("delete from Entity3");
-                db.ExequteNonQuery("delete from SubEntity1");
-                db.ExequteNonQuery("delete from SubEntity2");
-                db.ExequteNonQuery("delete from SubEntity3");
+                db.ExequteNonQuery("delete from Entity1", null);
+                db.ExequteNonQuery("delete from Entity2", null);
+                db.ExequteNonQuery("delete from Entity3", null);
+                db.ExequteNonQuery("delete from SubEntity1", null);
+                db.ExequteNonQuery("delete from SubEntity2", null);
+                db.ExequteNonQuery("delete from SubEntity3", null);
 
                 int iMax = 100;
                 int iiMax = 100;

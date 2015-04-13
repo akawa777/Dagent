@@ -12,35 +12,45 @@ using Dagent.Library;
 using Dagent.Rows;
 using Dagent;
 using Dagent.Kernels;
+using Dagent.Exceptions;
 
 namespace Dagent.Models
 {
     internal class Command<T> : ICommand<T>
         where T : class, new()
     {
-        public Command(IDagentKernel dagentKernel, string tableName, string[] primaryKeys, ColumnNamePropertyMap columnNamePropertyMap)
+        public Command(IDagentKernel dagentKernel, string tableName, string[] primaryKeys)
         {
             this.dagentKernel = dagentKernel;
             this.tableName = tableName;
+            this.primaryKeys = primaryKeys;
 
-            this.columnNamePropertyMap = columnNamePropertyMap;
+            config = new Config(columnNamePropertyMap);
+        }
 
+        protected IDagentKernel dagentKernel;
+        protected string tableName;
+        private ColumnNamePropertyMap columnNamePropertyMap = new ColumnNamePropertyMap();
+        private Config config;
+        private string[] primaryKeys;
+
+        protected virtual int Execute(DataRowState rowState, T entity)
+        {
             if (primaryKeys != null)
             {
                 foreach (string key in primaryKeys)
                 {
                     PropertyInfo property = columnNamePropertyMap.GetProperty<T>(key);
-                    this.commandOption.PrimaryKeys[key] = DynamicMethodBuilder<T>.CreateGetMethod(property);                    
+
+                    if (property == null)
+                    {
+                        throw new Exception(ExceptionMessges.NotExistProperty(typeof(T), key));
+                    }
+
+                    this.commandOption.PrimaryKeys[key] = DynamicMethodBuilder<T>.CreateGetMethod(property);
                 }
             }
-        }
 
-        protected IDagentKernel dagentKernel;
-        protected string tableName;
-        private ColumnNamePropertyMap columnNamePropertyMap;
-
-        protected virtual int Execute(DataRowState rowState, T entity)
-        {
             using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel.Connection))
             {
                 Dictionary<string, object> columnValueMap = new Dictionary<string, object>();
@@ -150,6 +160,16 @@ namespace Dagent.Models
             }
 
             return this;
-        }  
+        }
+
+        public ICommand<T> Config(Action<IConfig> setConfigAction)
+        {
+            if (setConfigAction != null)
+            {
+                setConfigAction(config);
+            }
+
+            return this;
+        }
     }
 }

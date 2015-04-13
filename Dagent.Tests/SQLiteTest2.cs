@@ -48,8 +48,6 @@ namespace Dagent.Tests2
         //[TestMethod]
         public void GetStarted()
         {
-
-
             DagentDatabase db = new DagentDatabase("connectionStringName");
 
             List<Customer> customers = db.Query<Customer>("select * from Customers where CustomerId > @CustomerId", new { CustomerId = 1000 }).List();
@@ -63,25 +61,18 @@ namespace Dagent.Tests2
 
             db.Command<Customer>("Customers", "CustomerId").Delete(customer);
 
-
         }
 
         public void QuerySingle()
         {
-
-
             DagentDatabase db = new DagentDatabase("connectionStringName");
 
             Customer customer = db.Query<Customer>("Customers", new { CustomerId = 1 }).Single();
             customer = db.Query<Customer>("select * from Customers where CustomerId = @CustomerId", new { CustomerId = 1 }).Single();
-
-
         }
 
         public void QueryList()
         {
-
-
             DagentDatabase db = new DagentDatabase("connectionStringName");
             List<Customer> customers =
                 db.Query<Customer>("Customers").List();
@@ -91,14 +82,10 @@ namespace Dagent.Tests2
                     "select * from Customers where CustomerId > @CustomerId",
                     new { CustomerId = 10 })
                 .List();
-
-
         }
 
         public void QueryPaging()
         {
-
-
             DagentDatabase db = new DagentDatabase("connectionStringName");
 
             int totalCount = 0;
@@ -107,8 +94,6 @@ namespace Dagent.Tests2
                     "select * from Customers where CustomerId > @CustomerId",
                     new { CustomerId = 10 })
                 .Page(10, 100, out totalCount);
-
-
         }
 
         public void Mapping()
@@ -124,26 +109,23 @@ namespace Dagent.Tests2
                     model.Name = row.Get<string>("Name");
                 })
                 .List();
-
         }
 
         public void MappingOneToOne()
         {
-
-
             DagentDatabase db = new DagentDatabase("connectionStringName");
             List<Customer> customers =
                 db.Query<Customer>(@"
-        select 
-            * 
-        from 
-            Customers Customer
-        inner join
-            CustomerCategories Category
-        on
-            Category.CustomerCategoryId = Customer.CustomerCategoryId
-        where 
-            Customer.CustomerId > @CustomerId",
+                    select 
+                        * 
+                    from 
+                        Customers Customer
+                    inner join
+                        CustomerCategories Category
+                    on
+                        Category.CustomerCategoryId = Customer.CustomerCategoryId
+                    where 
+                        Customer.CustomerId > @CustomerId",
                     new { CustomerId = 10 })
                 .Each((model, row) =>
                 {
@@ -156,47 +138,43 @@ namespace Dagent.Tests2
                 .List();
             customers =
                 db.Query<Customer>(@"
-        select 
-            * 
-        from 
-            Customers Customer
-        inner join
-            CustomerCategories Category
-        on
-            Category.CustomerCategoryId = Customer.CustomerCategoryId
-        where 
-            Customer.CustomerId > @CustomerId",
+                    select 
+                        * 
+                    from 
+                        Customers Customer
+                    inner join
+                        CustomerCategories Category
+                    on
+                        Category.CustomerCategoryId = Customer.CustomerCategoryId
+                    where 
+                        Customer.CustomerId > @CustomerId",
                     new { CustomerId = 10 })
                 .Each((model, row) =>
                 {
                     row.Map(model, x => x.Category).Do();
                 })
                 .List();
-
-
         }
 
         public void MappingOneToMany()
         {
-
-
             DagentDatabase db = new DagentDatabase("connectionStringName");
 
             List<Customer> customers =
                 db.Query<Customer>(@"
-        select 
-            * 
-        from 
-            Customers Customer
-        left join
-            CustomerPurchases Purchase
-        on
-            CustomerPurchase.CustomerId = Customer.CustomerId
-        where 
-            Customer.CustomerId > @CustomerId
-        order by
-            Customer.CustomerId,
-            Purchase.PurchaseNo",
+                    select 
+                        * 
+                    from 
+                        Customers Customer
+                    left join
+                        CustomerPurchases Purchase
+                    on
+                        CustomerPurchase.CustomerId = Customer.CustomerId
+                    where 
+                        Customer.CustomerId > @CustomerId
+                    order by
+                        Customer.CustomerId,
+                        Purchase.PurchaseNo",
                     new { CustomerId = 10 })
                 .Unique("CustomerId")
                 .Each((model, row) =>
@@ -220,19 +198,19 @@ namespace Dagent.Tests2
 
             customers =
                 db.Query<Customer>(@"
-        select 
-            * 
-        from 
-            Customers Customer
-        left join
-            CustomerPurchases Purchase
-        on
-            CustomerPurchase.CustomerId = Customer.CustomerId
-        where 
-            Customer.CustomerId > @CustomerId
-        order by
-            Customer.CustomerId,
-            Purchase.PurchaseNo",
+                    select 
+                        * 
+                    from 
+                        Customers Customer
+                    left join
+                        CustomerPurchases Purchase
+                    on
+                        CustomerPurchase.CustomerId = Customer.CustomerId
+                    where 
+                        Customer.CustomerId > @CustomerId
+                    order by
+                        Customer.CustomerId,
+                        Purchase.PurchaseNo",
                     new { CustomerId = 10 })
                 .Unique("CustomerId")
                 .Each((model, row) =>
@@ -240,35 +218,31 @@ namespace Dagent.Tests2
                     row.Map(model, x => x.Purchases, "PurchaseNo").Do();
                 })
                 .List();
-
-
         }
 
         public void MappingNested()
         {
-
-
             DagentDatabase db = new DagentDatabase("connectionStringName");
 
             List<Customer> customers =
                 db.Query<Customer>(@"
-        select 
-            * 
-        from 
-            Customers Customer
-        left join
-            CustomerPurchases Purchase
-        on
-            CustomerPurchase.CustomerId = Customer.CustomerId
-        inner join
-            Products Product
-        on
-            Product.ProductId = Purcase.ProductId
-        where 
-            Customer.CustomerId > @CustomerId
-        order by
-            Customer.CustomerId,
-            Purchase.PurchaseNo",
+                    select 
+                        * 
+                    from 
+                        Customers Customer
+                    left join
+                        CustomerPurchases Purchase
+                    on
+                        CustomerPurchase.CustomerId = Customer.CustomerId
+                    inner join
+                        Products Product
+                    on
+                        Product.ProductId = Purcase.ProductId
+                    where 
+                        Customer.CustomerId > @CustomerId
+                    order by
+                        Customer.CustomerId,
+                        Purchase.PurchaseNo",
                     new { CustomerId = 10 })
                 .Unique("CustomerId")
                 .Each((model, row) =>
@@ -298,43 +272,38 @@ namespace Dagent.Tests2
 
             customers =
                 db.Query<Customer>(@"
-        select 
-            * 
-        from 
-            Customers Customer
-        left join
-            CustomerPurchases Purchase
-        on
-            CustomerPurchase.CustomerId = Customer.CustomerId
-        inner join
-            Products Product
-        on
-            Product.ProductId = Purcase.ProductId
-        where 
-            Customer.CustomerId > @CustomerId
-        order by
-            Customer.CustomerId,
-            Purchase.PurchaseNo",
+                    select 
+                        * 
+                    from 
+                        Customers Customer
+                    left join
+                        CustomerPurchases Purchase
+                    on
+                        CustomerPurchase.CustomerId = Customer.CustomerId
+                    inner join
+                        Products Product
+                    on
+                        Product.ProductId = Purcase.ProductId
+                    where 
+                        Customer.CustomerId > @CustomerId
+                    order by
+                        Customer.CustomerId,
+                        Purchase.PurchaseNo",
                     new { CustomerId = 10 })
                 .Unique("CustomerId")
                 .Each((model, row) =>
                 {
-                    row.Map(model, x => x.Purchases, "PurchaseNo")
-                        //.Unique("CustomerId", "PurchaseNo")
+                    row.Map(model, x => x.Purchases, "PurchaseNo")                        
                         .Each(purchase =>
                         {
                             row.Map(purchase, x => x.Product).Do();
                         }).Do();
                 })
                 .List();
-
-
         }
 
         public void InsertUpdateCreate()
         {
-
-
             DagentDatabase db = new DagentDatabase("connectionStringName");
 
             Customer customer = new Customer { CustomerId = 1 };
@@ -344,14 +313,10 @@ namespace Dagent.Tests2
                 updateRow["Name"] = "Ziba-nyan";
             })
             .Insert(customer);
-
-
         }
 
         public void ConnectionScope()
         {
-
-
             DagentDatabase db = new DagentDatabase("connectionStringName");
 
             using (IConnectionScope scope = db.ConnectionScope())
@@ -361,14 +326,10 @@ namespace Dagent.Tests2
                 List<CustomerCategory> customerCategories =
                     db.Query<CustomerCategory>("CustomerCategory").List();
             }
-
-
         }
 
         public void TransactionScope()
         {
-
-
             DagentDatabase db = new DagentDatabase("connectionStringName");
 
             using (ITransactionScope scope = db.TransactionScope())
@@ -385,21 +346,17 @@ namespace Dagent.Tests2
 
                 scope.Rollback();
             }
-
-
         }
 
         public void TextBuilder()
         {
-
-
             string selectSql = @"
-    select 
-        * 
-    from 
-        Customers Customer    
-    where 
-        {{condition}}";
+                select 
+                    * 
+                from 
+                    Customers Customer    
+                where 
+                    {{condition}}";
 
             TextBuilder textBuilder = new TextBuilder(
                 selectSql,
@@ -407,8 +364,8 @@ namespace Dagent.Tests2
             );
 
             string orderSql = @"
-    order by
-        {{sort}}";
+                order by
+                    {{sort}}";
 
             textBuilder.Append(
                 orderSql,
@@ -422,11 +379,7 @@ namespace Dagent.Tests2
             List<Customer> customers =
                 db.Query<Customer>(sqlSelectOrder, new { CustomerId = 10 }).List();
 
-
         }
 
     }
-
-
-
 }

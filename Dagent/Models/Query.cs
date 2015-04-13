@@ -19,20 +19,20 @@ namespace Dagent.Models
 {
     internal class Query<T> : IQuery<T> where T : class, new()
     {
-        public Query(IDagentKernel dagentKernel, string selectSql, Parameter[] parameters, ColumnNamePropertyMap columnNamePropertyMap)
+        public Query(IDagentKernel dagentKernel, string selectSql, Parameter[] parameters)
         {
             this.dagentKernel = dagentKernel;
             this.selectSql = selectSql;
             queryOption.Parameters = parameters == null ? new Parameter[0] : parameters;
 
-            this.columnNamePropertyMap = columnNamePropertyMap;
+            config = new Config(columnNamePropertyMap);
         }
 
         protected IDagentKernel dagentKernel;
         protected string selectSql;
         protected QueryOption<T> queryOption = new QueryOption<T>();
-
-        private ColumnNamePropertyMap columnNamePropertyMap;
+        private ColumnNamePropertyMap columnNamePropertyMap = new ColumnNamePropertyMap();
+        private Config config;
 
         public virtual int Count()
         {
@@ -278,6 +278,16 @@ namespace Dagent.Models
             {
                 queryOption.MapAction = mapAction;
             }
+            return this;
+        }
+
+        public IQuery<T> Config(Action<IConfig> setConfigAction)
+        {
+            if (setConfigAction != null)
+            {
+                setConfigAction(config);
+            }
+
             return this;
         }
     }

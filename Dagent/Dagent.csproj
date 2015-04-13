@@ -43,10 +43,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Config.cs" />
+    <Compile Include="Exceptions\ExceptionMessges.cs" />
     <Compile Include="IConnectionScope.cs" />
     <Compile Include="ITransactionScope.cs" />
     <Compile Include="ConnectionScope.cs" />
     <Compile Include="ITextBuilder.cs" />
+    <Compile Include="Library\ColumnNamePropertyMap.cs" />
     <Compile Include="Models\IMappingState.cs" />
     <Compile Include="Rows\IBaseRow.cs" />
     <Compile Include="Rows\ICurrentRow.cs" />
@@ -85,6 +88,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>
+    </PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

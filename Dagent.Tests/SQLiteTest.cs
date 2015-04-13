@@ -13,7 +13,7 @@ namespace Dagent.Tests
 {
     public class Customer
     {
-        public int customerId { get; set; }
+        public int customerId { get; set; }        
         public string name { get; set; }
         public int businessId { get; set; }        
 
@@ -33,8 +33,8 @@ namespace Dagent.Tests
 
     public class Business
     {
-        public int businessId { get; set; }
-        public string businessName { get; set; }
+        public int BusinessId { get; set; }
+        public string BusinessName { get; set; }
     }
 
     public class CustomerPurchase
@@ -119,54 +119,54 @@ namespace Dagent.Tests
             ValidList(customers);
         }
 
-        [TestMethod]
-        public void DagentTest()
-        {
-            IDagentDatabase database = new DagentDatabase("SQLite");
+        //[TestMethod]
+        //public void DagentTest()
+        //{
+        //    IDagentDatabase database = new DagentDatabase("SQLite");
 
-            var customers = database.Query<Customer>("select * from customers").List();
+        //    var customers = database.Query<Customer>("select * from customers").List();
 
-            using (var scope = database.ConnectionScope())
-            {
-                foreach (var customer in customers)
-                {
-                    customer.CustomerPurchases = database.Query<CustomerPurchase>("select * from customerPurchases where customerId = @customerId", new { customerId = customer.customerId }).List();
-                }
-            }
+        //    using (var scope = database.ConnectionScope())
+        //    {
+        //        foreach (var customer in customers)
+        //        {
+        //            customer.CustomerPurchases = database.Query<CustomerPurchase>("select * from customerPurchases where customerId = @customerId", new { customerId = customer.customerId }).List();
+        //        }
+        //    }
 
-            ValidList(customers);
-        }
+        //    ValidList(customers);
+        //}
 
-        [TestMethod]
-        public void DapperTest()
-        {
-            IDagentDatabase database = new DagentDatabase("SQLite");
+        //[TestMethod]
+        //public void DapperTest()
+        //{
+        //    IDagentDatabase database = new DagentDatabase("SQLite");
 
-            var customers = database.Connection.Query<Customer>("select * from customers", null).ToList();
+        //    var customers = database.Connection.Query<Customer>("select * from customers", null).ToList();
 
-            foreach (var customer in customers)
-            {                
-                customer.CustomerPurchases = database.Connection.Query<CustomerPurchase>("select * from customerPurchases where customerId = @customerId", new { customerId = customer.customerId}).ToList();
-            }
+        //    foreach (var customer in customers)
+        //    {                
+        //        customer.CustomerPurchases = database.Connection.Query<CustomerPurchase>("select * from customerPurchases where customerId = @customerId", new { customerId = customer.customerId}).ToList();
+        //    }
 
-            ValidList(customers);
-        }
+        //    ValidList(customers);
+        //}
 
-        [TestMethod]
-        public void NpocoTest()
-        {
-            IDagentDatabase database = new DagentDatabase("SQLite");
-            NPoco.IDatabase db = new NPoco.Database(database.Connection);
+        //[TestMethod]
+        //public void NpocoTest()
+        //{
+        //    IDagentDatabase database = new DagentDatabase("SQLite");
+        //    NPoco.IDatabase db = new NPoco.Database(database.Connection);
 
-            var customers = db.Fetch<Customer>("select * from customers");
+        //    var customers = db.Fetch<Customer>("select * from customers");
 
-            foreach (var customer in customers)
-            {
-                customer.CustomerPurchases = db.Fetch<CustomerPurchase>("select * from customerPurchases where customerId = @customerId", new { customerId = customer.customerId });
-            }
+        //    foreach (var customer in customers)
+        //    {
+        //        customer.CustomerPurchases = db.Fetch<CustomerPurchase>("select * from customerPurchases where customerId = @customerId", new { customerId = customer.customerId });
+        //    }
 
-            ValidList(customers);
-        }
+        //    ValidList(customers);
+        //}
 
         [TestMethod]
         public void Fetch()
@@ -230,6 +230,12 @@ namespace Dagent.Tests
 
                 //    model.Business = row.Map<Business>(null, null, null);
                 //})
+                .Config(config =>
+                {
+                    config.Map<Business>()
+                        .SetColumn("businessId", x => x.BusinessId)
+                        .SetColumn("businessName", x => x.BusinessName);
+                })
                 .List();
 
             ValidList(customers);
@@ -335,8 +341,8 @@ namespace Dagent.Tests
 
                     model.Business = new Business
                     {
-                        businessId = row.Get<int>("businessId"),
-                        businessName = row.Get<string>("businessName")
+                        BusinessId = row.Get<int>("businessId"),
+                        BusinessName = row.Get<string>("businessName")
                     };
 
                     CustomerPurchase customerPurchaseModel = new CustomerPurchase
@@ -644,11 +650,19 @@ namespace Dagent.Tests
                 {
                     Business business = new Business
                     {
-                        businessId = i,
-                        businessName = "business_" + i.ToString()
+                        BusinessId = i,
+                        BusinessName = "business_" + i.ToString()
 
                     };
-                    database.Command<Business>("business", "businessId").Insert(business);
+                    database.Command<Business>("business", "businessId")
+                        .Config(config => 
+                        {
+                            config.Map<Business>()
+                                .SetColumn("businessId", x => x.BusinessId)
+                                .SetColumn("businessName", x => x.BusinessName);
+                            
+                        })
+                        .Insert(business);
                 }
 
                 scope.Commit();

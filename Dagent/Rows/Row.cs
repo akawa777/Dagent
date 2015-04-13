@@ -8,6 +8,7 @@ using System.Reflection;
 using Dagent.Library;
 using System.Data.Common;
 using System.Data;
+using Dagent.Exceptions;
 
 namespace Dagent.Rows
 {
@@ -95,7 +96,16 @@ namespace Dagent.Rows
 
         public object this[string columnName]
         {
-            get { return values[valueMap[columnName]]; }
+            get 
+            {
+                int index;
+                if (valueMap.TryGetValue(columnName, out index))
+                {
+                    return values[valueMap[columnName]]; 
+                }
+
+                throw new Exception(ExceptionMessges.NotExistColumnName(columnName));                
+            }
             set 
             {   
                 values[valueMap[columnName]] = value; 
