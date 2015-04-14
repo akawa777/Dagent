@@ -14,13 +14,11 @@ namespace Dagent.Options
         {
             PrimaryKeys = new Dictionary<string, Func<T, object>>();
             AutoMapping = true;
-            MapAction = (row, model) => { };
-            IgnorePropertyExpressions = new Expression<Func<T, object>>[0];            
+            MapAction = (row, model) => { };            
         }
 
         public Dictionary<string, Func<T, object>> PrimaryKeys { get; set; }        
         public virtual bool AutoMapping { get; set; }
-        public virtual Action<IUpdateRow, T> MapAction { get; set; }
-        public virtual Expression<Func<T, object>>[] IgnorePropertyExpressions { get; set; }        
+        public virtual Action<IUpdateRow, T> MapAction { get; set; }        
     }
 }

@@ -55,6 +55,7 @@
     <Compile Include="Rows\ICurrentRow.cs" />
     <Compile Include="Rows\INextRow.cs" />
     <Compile Include="Rows\IUpdateRow.cs" />
+    <Compile Include="Rows\RowPropertyMapper.cs" />
     <Compile Include="TextBuilder.cs" />
     <Compile Include="Rows\Row.cs" />
     <Compile Include="Rows\CurrentRow.cs" />

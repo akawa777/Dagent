@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Reflection;
+using System.Linq.Expressions;
 
 namespace Dagent.Library
 {
@@ -10,13 +11,15 @@ namespace Dagent.Library
     {
         static PropertyCache()
         {
-            foreach (PropertyInfo property in typeof(T).GetProperties())
+            properties = typeof(T).GetProperties();
+            foreach (PropertyInfo property in properties)
             {
                 map[property.Name] = property;
             }
         }
 
         private static readonly Dictionary<string, PropertyInfo> map = new Dictionary<string, PropertyInfo>();
+        private static PropertyInfo[] properties;
 
         public static PropertyInfo GetProperty(string propertyName)
         {
@@ -28,6 +31,11 @@ namespace Dagent.Library
             }
 
             return null;
+        }
+
+        public static PropertyInfo[] GetProperties()
+        {
+            return properties;
         }
     }
 }

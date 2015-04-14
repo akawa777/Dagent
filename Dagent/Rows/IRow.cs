@@ -25,5 +25,7 @@ namespace Dagent.Rows
         IRow PrevRow { get; set; }
 
         void SetValue(object[] values);
+
+        bool TryGetValue(string columnName, out object value);
     }
 }

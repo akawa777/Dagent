@@ -40,9 +40,8 @@ namespace Dagent.Models
             {
                 foreach (string key in primaryKeys)
                 {
-                    PropertyInfo property = columnNamePropertyMap.GetProperty<T>(key);
-
-                    if (property == null)
+                    PropertyInfo property;
+                    if (!columnNamePropertyMap.TryGetProperty<T>(key, out property))
                     {
                         throw new Exception(ExceptionMessges.NotExistProperty(typeof(T), key));
                     }
@@ -58,11 +57,12 @@ namespace Dagent.Models
                 if (commandOption.AutoMapping)
                 {
                     foreach (var property in typeof(T).GetProperties())
-                    {
+                    {                        
                         DbType? dbType = dagentKernel.GetDbType(property.PropertyType);
-                        if (dbType.HasValue)
+                        string columnName;
+                        if (dbType.HasValue && columnNamePropertyMap.TryGetColumnName<T>(property, out columnName))
                         {
-                            columnValueMap[columnNamePropertyMap.GetColumnName<T>(property.Name)] = DynamicMethodBuilder<T>.CreateGetMethod(property)(entity);
+                            columnValueMap[columnName] = DynamicMethodBuilder<T>.CreateGetMethod(property)(entity);
                         }
                     }
                 }
@@ -145,20 +145,6 @@ namespace Dagent.Models
         public virtual ICommand<T> Auto(bool autoMapping)
         {
             commandOption.AutoMapping = autoMapping;
-            return this;
-        }
-
-        public virtual ICommand<T> Ignore(params Expression<Func<T, object>>[] ignorePropertyExpressions)
-        {
-            if (ignorePropertyExpressions == null)
-            {
-                commandOption.IgnorePropertyExpressions = new Expression<Func<T, object>>[0];
-            }
-            else
-            {
-                commandOption.IgnorePropertyExpressions = ignorePropertyExpressions;
-            }
-
             return this;
         }
 

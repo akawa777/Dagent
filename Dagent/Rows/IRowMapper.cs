@@ -13,7 +13,7 @@ namespace Dagent.Rows
 {  
     public interface IRowModelMapper
     {
-        T Map<T>(string[] validColumnNames, string prefixColumnName, Expression<Func<T, object>>[] ignorePropertyExpressions) where T : class, new();
+        T Map<T>(string[] validColumnNames, string prefixColumnName) where T : class, new();
     }
 
     public interface IRowPropertyMapDefine
@@ -32,8 +32,7 @@ namespace Dagent.Rows
         IRowPropertyMapper<T, P> Unique(params string[] uniqueColumnNames);
         IRowPropertyMapper<T, P> Each(Action<P> mapAction);
         IRowPropertyMapper<T, P> Prefix(string prefixColumnName);
-        IRowPropertyMapper<T, P> Auto(bool autoMapping);
-        IRowPropertyMapper<T, P> Ignore(params Expression<Func<P, object>>[] ignorePropertyExpressions);       
+        IRowPropertyMapper<T, P> Auto(bool autoMapping);        
 
         void Do();        
     }

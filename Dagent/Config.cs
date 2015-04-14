@@ -40,10 +40,9 @@ namespace Dagent
 
     public interface IMap<T> where T : class, new()
     {
-        IMap<T> SetColumn<P>(string columnName, Expression<Func<T, P>> propertyExpression);
-        IMap<T> RemoveColumn(string columnName);
-        IMap<T> RemoveColumn();
-        IMap<T> ClearColumn();
+        IMap<T> Column<P>(Expression<Func<T, P>> propertyExpression, string columnName);
+        IMap<T> Ignore<P>(Expression<Func<T, P>> propertyExpression);
+        IMap<T> Clear();
     }
 
     internal class Map<T> : IMap<T> where T : class, new()
@@ -55,28 +54,24 @@ namespace Dagent
 
         private ColumnNamePropertyMap columnNamePropertyMap = new ColumnNamePropertyMap();
 
-        public IMap<T> SetColumn<P>(string columnName, Expression<Func<T, P>> propertyExpression)
+        public IMap<T> Column<P>(Expression<Func<T, P>> propertyExpression, string columnName)
         {
-            columnNamePropertyMap.Set<T>(columnName, PropertyCache<T>.GetProperty(propertyExpression.Body.ToString().Split('.')[1]));
+            columnNamePropertyMap.Column<T>(columnName, PropertyCache<T>.GetProperty(propertyExpression.Body.ToString().Split('.')[1]));
 
             return this;
         }
 
-        public IMap<T> RemoveColumn(string columnName)
-        {
-            columnNamePropertyMap.Remove<T>(columnName);
-            return this;
-        }
-
-        public IMap<T> RemoveColumn()
-        {
-            columnNamePropertyMap.Remove<T>();
-            return this;
-        }
-
-        public IMap<T> ClearColumn()
+        public IMap<T> Clear()
         {
             columnNamePropertyMap.Clear();
+            return this;
+        }
+
+
+        public IMap<T> Ignore<P>(Expression<Func<T, P>> propertyExpression)
+        {
+            columnNamePropertyMap.Ignore<T>(PropertyCache<T>.GetProperty(propertyExpression.Body.ToString().Split('.')[1]));
+
             return this;
         }
     }

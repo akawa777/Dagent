@@ -112,6 +112,19 @@ namespace Dagent.Rows
             }
         }
 
+        public bool TryGetValue(string columnName, out object value)
+        {
+            int index;
+            if (valueMap.TryGetValue(columnName, out index))
+            {
+                value = values[valueMap[columnName]];
+                return true;
+            }
+
+            value = null;
+            return false;
+        }
+
         public object this[int i]
         {
             get { return values[i]; }
@@ -166,11 +179,11 @@ namespace Dagent.Rows
 
         private ColumnNamePropertyMap columnNamePropertyMap;
 
-        public T Map<T>(string[] validColumnNames, string prefixColumnName, Expression<Func<T, object>>[] ignorePropertyExpressions) where T : class, new()
+        public T Map<T>(string[] validColumnNames, string prefixColumnName) where T : class, new()
         {
             T model = new T();
 
-            bool success = ModelMapper<T>.Map(model, this, validColumnNames, prefixColumnName, ignorePropertyExpressions, columnNamePropertyMap);
+            bool success = ModelMapper<T>.Map(model, this, validColumnNames, prefixColumnName, columnNamePropertyMap);
 
             if (success)
             {
@@ -194,154 +207,8 @@ namespace Dagent.Rows
             where P : class, new()
         {
             return new RowPropertyMapper<T, P>(model, this, targetListPropertyExpression, validColumnNames, columnNamePropertyMap);
-        }
+        }        
     }
 
-    internal class RowPropertyMapper<T, P> : IRowPropertyMapper<T, P>
-        where T : class, new()
-        where P : class, new()
-    {
-        public RowPropertyMapper(T model, Row row, Expression<Func<T, P>> targetPropertyExpression, string[] validColumnNames, ColumnNamePropertyMap columnNamePropertyMap)
-        {
-            this.model = model;
-            this.row = row;
-            this.targetPropertyExpression = targetPropertyExpression;
-            this.validColumnNames = validColumnNames;
-            this.columnNamePropertyMap = columnNamePropertyMap;
-        }
-
-        public RowPropertyMapper(T model, Row row, Expression<Func<T, List<P>>> targetListPropertyExpression, string[] validColumnNames, ColumnNamePropertyMap columnNamePropertyMap)
-        {
-            this.model = model;
-            this.row = row;
-            this.targetListPropertyExpression = targetListPropertyExpression;
-            this.validColumnNames = validColumnNames;
-            this.columnNamePropertyMap = columnNamePropertyMap;
-        }
-
-        private T model;
-        private Row row;
-        private Expression<Func<T, P>> targetPropertyExpression;
-        private Expression<Func<T, List<P>>> targetListPropertyExpression;
-        string[] validColumnNames;
-        
-        private string [] uniqueColumnNames = new string[0];
-        private string prefixColumnName;
-        private Expression<Func<P, object>>[] ignorePropertyExpressions = new Expression<Func<P,object>>[0];        
-        private bool autoMapping = true;
-        private Action<P> mapAction;
-
-        private ColumnNamePropertyMap columnNamePropertyMap;
-
-        public void Do()
-        {
-            if (targetPropertyExpression != null)
-            {
-                P value = new P();
-
-                bool success = true;
-
-                if (autoMapping)
-                {
-                    success = ModelMapper<P>.Map(value, row, validColumnNames, prefixColumnName, ignorePropertyExpressions, columnNamePropertyMap);
-                }
-
-                if (success)
-                {
-                    PropertyInfo property = PropertyCache<T>.GetProperty(ExpressionParser.GetMemberInfo(targetPropertyExpression).Name);
-                    
-                    DynamicMethodBuilder<T, P>.CreateSetMethod(property)(model, value);
-
-                    if (mapAction != null)
-                    {
-                        mapAction(value);
-                    }
-                }
-            }
-            else
-            {
-                PropertyInfo property = PropertyCache<T>.GetProperty(ExpressionParser.GetMemberInfo(targetListPropertyExpression).Name);
-
-                Func<T, List<P>> getMethod = DynamicMethodBuilder<T, List<P>>.CreateGetMethod(property);
-
-                List<P> list = getMethod(model);                
-
-                if (list == null)
-                {
-                    list = new List<P>();
-                    DynamicMethodBuilder<T, List<P>>.CreateSetMethod(property)(model, list);
-                }
-
-                P value;
-
-                if (list.Count != 0 && row.PrevRow != null && uniqueColumnNames.Length > 0 && row.Compare(row.PrevRow, uniqueColumnNames))
-                {   
-                    value = list[list.Count - 1];
-
-                    if (mapAction != null)
-                    {
-                        mapAction(value);
-                    }
-                }
-                else
-                {
-                    value = new P();
-
-                    bool success = true;
-
-                    if (autoMapping)
-                    {
-                        success = ModelMapper<P>.Map(value, row, validColumnNames, prefixColumnName, ignorePropertyExpressions, columnNamePropertyMap);
-                    }
-
-                    if (success)
-                    {
-                        list.Add(value);
-
-                        if (mapAction != null)
-                        {
-                            mapAction(value);
-                        }
-                    }
-                }
-            }
-        }
-
-        public IRowPropertyMapper<T, P> Prefix(string prefixColumnName)
-        {
-            this.prefixColumnName = prefixColumnName;
-
-            return this;
-        }
-
-        public IRowPropertyMapper<T, P> Ignore(params Expression<Func<P, object>>[] ignorePropertyExpressions)
-        {
-            this.ignorePropertyExpressions = ignorePropertyExpressions;
-
-            return this;
-        }
-
-
-        public IRowPropertyMapper<T, P> Unique(params string[] uniqueColumnNames)
-        {
-            this.uniqueColumnNames = uniqueColumnNames;
-
-            return this;
-        }
-
-        public IRowPropertyMapper<T, P> Auto(bool autoMapping)
-        {
-            this.autoMapping = autoMapping;
-
-            return this;
-        }
-
-
-        public IRowPropertyMapper<T, P> Each(Action<P> mapAction)
-        {
-            this.mapAction = mapAction;
-
-            return this;
-        }
-    }
+    
 }

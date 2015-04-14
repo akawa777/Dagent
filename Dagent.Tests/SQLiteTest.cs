@@ -119,54 +119,54 @@ namespace Dagent.Tests
             ValidList(customers);
         }
 
-        //[TestMethod]
-        //public void DagentTest()
-        //{
-        //    IDagentDatabase database = new DagentDatabase("SQLite");
+        [TestMethod]
+        public void DagentTest()
+        {
+            IDagentDatabase database = new DagentDatabase("SQLite");
 
-        //    var customers = database.Query<Customer>("select * from customers").List();
+            var customers = database.Query<Customer>("select * from customers").List();
 
-        //    using (var scope = database.ConnectionScope())
-        //    {
-        //        foreach (var customer in customers)
-        //        {
-        //            customer.CustomerPurchases = database.Query<CustomerPurchase>("select * from customerPurchases where customerId = @customerId", new { customerId = customer.customerId }).List();
-        //        }
-        //    }
+            using (var scope = database.ConnectionScope())
+            {
+                foreach (var customer in customers)
+                {
+                    customer.CustomerPurchases = database.Query<CustomerPurchase>("select * from customerPurchases where customerId = @customerId", new { customerId = customer.customerId }).List();
+                }
+            }
 
-        //    ValidList(customers);
-        //}
+            ValidList(customers);
+        }
 
-        //[TestMethod]
-        //public void DapperTest()
-        //{
-        //    IDagentDatabase database = new DagentDatabase("SQLite");
+        [TestMethod]
+        public void DapperTest()
+        {
+            IDagentDatabase database = new DagentDatabase("SQLite");
 
-        //    var customers = database.Connection.Query<Customer>("select * from customers", null).ToList();
+            var customers = database.Connection.Query<Customer>("select * from customers", null).ToList();
 
-        //    foreach (var customer in customers)
-        //    {                
-        //        customer.CustomerPurchases = database.Connection.Query<CustomerPurchase>("select * from customerPurchases where customerId = @customerId", new { customerId = customer.customerId}).ToList();
-        //    }
+            foreach (var customer in customers)
+            {
+                customer.CustomerPurchases = database.Connection.Query<CustomerPurchase>("select * from customerPurchases where customerId = @customerId", new { customerId = customer.customerId }).ToList();
+            }
 
-        //    ValidList(customers);
-        //}
+            ValidList(customers);
+        }
 
-        //[TestMethod]
-        //public void NpocoTest()
-        //{
-        //    IDagentDatabase database = new DagentDatabase("SQLite");
-        //    NPoco.IDatabase db = new NPoco.Database(database.Connection);
+        [TestMethod]
+        public void NpocoTest()
+        {
+            IDagentDatabase database = new DagentDatabase("SQLite");
+            NPoco.IDatabase db = new NPoco.Database(database.Connection);
 
-        //    var customers = db.Fetch<Customer>("select * from customers");
+            var customers = db.Fetch<Customer>("select * from customers");
 
-        //    foreach (var customer in customers)
-        //    {
-        //        customer.CustomerPurchases = db.Fetch<CustomerPurchase>("select * from customerPurchases where customerId = @customerId", new { customerId = customer.customerId });
-        //    }
+            foreach (var customer in customers)
+            {
+                customer.CustomerPurchases = db.Fetch<CustomerPurchase>("select * from customerPurchases where customerId = @customerId", new { customerId = customer.customerId });
+            }
 
-        //    ValidList(customers);
-        //}
+            ValidList(customers);
+        }
 
         [TestMethod]
         public void Fetch()
@@ -185,13 +185,7 @@ namespace Dagent.Tests
 	            order by 
                     c.customerId, cp.no")
                 .Unique("customerId")
-                .Each((model, row) => row.Map(model, x => x.CustomerPurchases).Do())
-                //.Each((model, row) =>
-                //{
-                //    if (model.CustomerPurchases == null) model.CustomerPurchases = new List<CustomerPurchase>();
-
-                //    model.CustomerPurchases.Add(row.Map<CustomerPurchase>(null, null, null));
-                //})
+                .Each((model, row) => row.Map(model, x => x.CustomerPurchases).Do())                
                 .List();
 
             ValidList(customers);
@@ -221,20 +215,12 @@ namespace Dagent.Tests
                 {
                     row.Map(model, x => x.Business, "businessName").Do();
                     row.Map(model, x => x.CustomerPurchases, "no").Do();
-                })
-                //.Each((model, row) =>
-                //{
-                //    if (model.CustomerPurchases == null) model.CustomerPurchases = new List<CustomerPurchase>();
-
-                //    model.CustomerPurchases.Add(row.Map<CustomerPurchase>(null, null, null));
-
-                //    model.Business = row.Map<Business>(null, null, null);
-                //})
+                })                
                 .Config(config =>
                 {
                     config.Map<Business>()
-                        .SetColumn("businessId", x => x.BusinessId)
-                        .SetColumn("businessName", x => x.BusinessName);
+                        .Column(x => x.BusinessId, "businessId")
+                        .Column(x => x.BusinessName, "businessName");
                 })
                 .List();
 
@@ -383,9 +369,13 @@ namespace Dagent.Tests
         	            order by 
                             c.customerId, cp.no")
                 .Unique("customerId")
-                .Ignore(x => x.name)
+                .Config(config => 
+                {
+                    config.Map<Customer>().Ignore(x => x.name);
+                    config.Map<CustomerPurchase>().Ignore(ignoreProperty);
+                })
                 .Each((model, row) => {
-                    row.Map(model, x => x.CustomerPurchases, "no").Ignore(ignoreProperty).Do();
+                    row.Map(model, x => x.CustomerPurchases, "no").Do();
                 })
                 .List();
 
@@ -417,8 +407,12 @@ namespace Dagent.Tests
         	            order by 
                             c.customerId, cp.no")
                 .Unique("customerId")
-                .Ignore(x => x.name)
-                .Each((model, row) => row.Map(model, x => x.CustomerPurchases, "no").Ignore(x => x.content).Do())
+                .Config(config => 
+                {
+                    config.Map<Customer>().Ignore(x => x.name);
+                    config.Map<CustomerPurchase>().Ignore(x => x.content);
+                })
+                .Each((model, row) => row.Map(model, x => x.CustomerPurchases, "no").Do())
                 .List();
 
             foreach (var customer in customers)
@@ -658,8 +652,8 @@ namespace Dagent.Tests
                         .Config(config => 
                         {
                             config.Map<Business>()
-                                .SetColumn("businessId", x => x.BusinessId)
-                                .SetColumn("businessName", x => x.BusinessName);
+                                .Column(x => x.BusinessId, "businessId")
+                                .Column(x => x.BusinessName, "businessName");
                             
                         })
                         .Insert(business);

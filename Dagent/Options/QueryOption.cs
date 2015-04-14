@@ -15,8 +15,7 @@ namespace Dagent.Options
         {
             Parameters = new Parameter[0];
             AutoMapping = true;
-            MapAction = (model, row) => { };
-            IgnorePropertyExpressions = new Expression<Func<T, object>>[0];
+            MapAction = (model, row) => { };            
             UniqueColumnNames = new string[0];
         }
 
@@ -25,7 +24,5 @@ namespace Dagent.Options
         public virtual string PrefixColumnName { get; set; }
         public virtual bool AutoMapping { get; set; }
         public virtual Action<T, ICurrentRow> MapAction { get; set; }
-        public virtual Expression<Func<T, object>>[] IgnorePropertyExpressions { get; set; }  
-        
     }
 }

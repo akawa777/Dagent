@@ -23,8 +23,7 @@ namespace Dagent
         IQuery<T> Parameters(params Parameter[] parameters);                
         IQuery<T> Parameters(object parameters);        
         IQuery<T> Each(Action<T, ICurrentRow> mapAction);
-        IQuery<T> Auto(bool autoMapping);
-        IQuery<T> Ignore(params Expression<Func<T, object>>[] ignorePropertyExpressions);
+        IQuery<T> Auto(bool autoMapping);        
 
         IQuery<T> Config(Action<IConfig> setConfigAction);
     }

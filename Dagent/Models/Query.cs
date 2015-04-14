@@ -125,8 +125,7 @@ namespace Dagent.Models
                             {
                                 option = new QueryOption<T>
                                 {
-                                    AutoMapping = queryOption.AutoMapping,
-                                    IgnorePropertyExpressions = queryOption.IgnorePropertyExpressions,
+                                    AutoMapping = queryOption.AutoMapping,                                    
                                     MapAction = queryOption.MapAction,
                                     Parameters = queryOption.Parameters,
                                     PrefixColumnName = queryOption.PrefixColumnName,
@@ -160,7 +159,7 @@ namespace Dagent.Models
                         {   
                             if (queryOption.AutoMapping)
                             {   
-                                model = currentRow.Map<T>(new string[0], queryOption.PrefixColumnName, queryOption.IgnorePropertyExpressions);                                
+                                model = currentRow.Map<T>(new string[0], queryOption.PrefixColumnName);                                
                             }
                             else
                             {
@@ -176,8 +175,7 @@ namespace Dagent.Models
 
                     option = new QueryOption<T>
                     {
-                        AutoMapping = queryOption.AutoMapping,
-                        IgnorePropertyExpressions = queryOption.IgnorePropertyExpressions,
+                        AutoMapping = queryOption.AutoMapping,                        
                         MapAction = queryOption.MapAction,
                         Parameters = queryOption.Parameters,
                         PrefixColumnName = queryOption.PrefixColumnName,
@@ -232,21 +230,7 @@ namespace Dagent.Models
         {
             queryOption.AutoMapping = autoMapping;
             return this;
-        }
-
-        public virtual IQuery<T> Ignore(params Expression<Func<T, object>>[] ignorePropertyExpressions)
-        {
-            if (ignorePropertyExpressions == null)
-            {
-                queryOption.IgnorePropertyExpressions = new Expression<Func<T, object>>[0];
-            }
-            else
-            {
-                queryOption.IgnorePropertyExpressions = ignorePropertyExpressions;
-            }
-
-            return this;
-        }
+        }        
 
         public virtual IQuery<T> Parameters(params Parameter[] parameters)
         {
