@@ -32,6 +32,7 @@ A key feature is performance. The following metrics show how long it takes to ex
 
 The performance tests are same test as the [Dapper](https://github.com/StackExchange/dapper-dot-net "Dapper").
 
+![Alt Text](https://github.com/akawa777/Dagent/resultOfPerformanceTest.png)
 |Method|Duration|
 |---|---|
 |Hand coded (using a SqlDataReader)|47ms|
