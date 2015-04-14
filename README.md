@@ -33,19 +33,6 @@ A key feature is performance. The following metrics show how long it takes to ex
 The performance tests are same test as the [Dapper](https://github.com/StackExchange/dapper-dot-net "Dapper").
 
 ![Alt Text](https://github.com/akawa777/Dagent/blob/master/resultOfPerformanceTest.png)
-|Method|Duration|
-|---|---|
-|Hand coded (using a SqlDataReader)|47ms|
-|**Dagent**|48ms|
-|Dapper ExecuteMapperQuery|49ms|
-|ServiceStack.OrmLite (QueryById)|50ms|
-|PetaPoco|52ms|
-|BLToolkit|80ms|
-|SubSonic CodingHorror|107ms|
-|NHibernate SQL|104ms|
-|Linq 2 SQL ExecuteQuery|181ms|
-|Entity framework ExecuteStoreQuery|631ms|
-
 ## Pure POCO
 Dagent Keep the POCO. Your class does not need to inherit class or put attribute. And is not dependent on sql and table.
 ## License
