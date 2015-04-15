@@ -6,13 +6,13 @@ $netVersions = "v3.5", "v4.0", "v4.5"
 
 $mainProject = $project + ".csproj";
 
-$directory = Split-Path $script:myInvocation.MyCommand.path -parent
+$myDirectory = Split-Path $script:myInvocation.MyCommand.path -parent
 
 $releaseDirectory = "ReleaseDlls"
 
-Remove-Item $directory\$releaseDirectory -Force -ErrorAction Ignore -Recurse
+Remove-Item $myDirectory\$releaseDirectory -Force -ErrorAction Ignore -Recurse
 
-$directory = $directory + "\Dagent"
+$directory = $myDirectory + "\Dagent"
 
 foreach($version in $netVersions)
 {
@@ -32,3 +32,11 @@ foreach($version in $netVersions)
 
     Remove-Item $directory\$verProject -Force -ErrorAction Ignore
 }
+
+Remove-Item $myDirectory\Dagent.v12.suo -Force -ErrorAction Ignore -Recurse
+Remove-Item $myDirectory\Dagent\bin -Force -ErrorAction Ignore -Recurse
+Remove-Item $myDirectory\Dagent\obj -Force -ErrorAction Ignore -Recurse
+Remove-Item $myDirectory\Dagent.Tests\bin -Force -ErrorAction Ignore -Recurse
+Remove-Item $myDirectory\Dagent.Tests\obj -Force -ErrorAction Ignore -Recurse
+Remove-Item $myDirectory\TestResults -Force -ErrorAction Ignore -Recurse
+Remove-Item $myDirectory\packages -Force -ErrorAction Ignore -Recurse
