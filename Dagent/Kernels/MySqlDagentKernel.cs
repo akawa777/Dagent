@@ -6,7 +6,7 @@ using System.Data;
 
 namespace Dagent.Kernels
 {    
-    public class MySqlDagentKernel : DagentKernel
+    internal class MySqlDagentKernel : DagentKernel
     {   
     }
 }

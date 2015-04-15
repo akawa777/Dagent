@@ -5,8 +5,8 @@ using System.Text;
 using System.Data;
 
 namespace Dagent.Kernels
-{    
-    public class SQLiteDagentKernel : DagentKernel
+{
+    internal class SQLiteDagentKernel : DagentKernel
     {
     }
 }

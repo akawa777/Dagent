@@ -12,5 +12,6 @@ namespace Dagent
     {
         void Commit();
         void Rollback();
+        DbTransaction Transaction { get; }
     }
 }

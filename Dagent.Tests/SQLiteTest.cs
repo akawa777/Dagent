@@ -909,5 +909,28 @@ namespace Dagent.Tests
             //    scope.Commit();
             //}
         }
+
+        [TestMethod]
+        public void TransactionTest()
+        {
+            string sql = @"
+                delete from customers where customerId = -1;
+            ";
+
+            DagentDatabase database = new DagentDatabase("SQLite");
+
+            using (var scope = database.TransactionScope())
+            {         
+                int rtn1 = database.ExequteNonQuery(sql);
+
+                Assert.AreEqual(0, rtn1);
+
+                scope.Commit();
+            }
+
+            int rtn2 = database.ExequteNonQuery(sql);
+
+            Assert.AreEqual(0, rtn2);
+        }
     }
 }

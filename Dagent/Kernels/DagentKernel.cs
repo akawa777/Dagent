@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 
 namespace Dagent.Kernels
 {
-    public abstract class DagentKernel : IDagentKernel
+    internal abstract class DagentKernel : IDagentKernel
     {
         public DagentKernel()
         {
@@ -285,5 +285,8 @@ namespace Dagent.Kernels
 
             return command;
         }
+
+
+        public DbTransaction Transaction { get; set; }
     }
 }

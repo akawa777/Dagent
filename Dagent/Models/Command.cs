@@ -50,7 +50,7 @@ namespace Dagent.Models
                 }
             }
 
-            using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel.Connection))
+            using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel))
             {
                 Dictionary<string, object> columnValueMap = new Dictionary<string, object>();
 
@@ -106,6 +106,7 @@ namespace Dagent.Models
                 }
 
                 DbCommand command = dagentKernel.CreateDbCommand(sql, valueParameters.ToArray());
+                command.Transaction = dagentKernel.Transaction;
 
                 return command.ExecuteNonQuery();
             }

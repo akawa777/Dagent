@@ -12,6 +12,7 @@ namespace Dagent.Kernels
     {
         DbProviderFactory ProviderFactory { get; set; }
         DbConnection Connection { get; set; }
+        DbTransaction Transaction { get; set; }
 
         string GetSelectSql(string tableName, string[] whereParameters);
         string GetSelectCountSql(string selectSql, string[] uniqueKeys);

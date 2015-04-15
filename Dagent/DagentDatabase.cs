@@ -54,27 +54,30 @@ namespace Dagent
 
         public virtual int ExequteNonQuery(string sql, params Parameter[] parameters)
         {
-            using (ConnectionScope connectionScope = new ConnectionScope(Connection))
+            using (ConnectionScope connectionScope = new ConnectionScope(this.dagentKernel))
             {
                 DbCommand command = dagentKernel.CreateDbCommand(sql, ParameterConverter.GetKeyValuePairs(parameters));
+                command.Transaction = this.dagentKernel.Transaction;
                 return command.ExecuteNonQuery();
             }
         }
 
         public virtual object ExequteScalar(string sql, params Parameter[] parameters)
         {
-            using (ConnectionScope connectionScope = new ConnectionScope(Connection))
-            {
+            using (ConnectionScope connectionScope = new ConnectionScope(this.dagentKernel))
+            {                
                 DbCommand command = dagentKernel.CreateDbCommand(sql, ParameterConverter.GetKeyValuePairs(parameters));
+                command.Transaction = this.dagentKernel.Transaction;
                 return command.ExecuteScalar();
             }
         }
 
         public virtual int Fill(DataTable dataTable, string selectSql, params Parameter[] parameters)
         {
-            using (ConnectionScope connectionScope = new ConnectionScope(Connection))
+            using (ConnectionScope connectionScope = new ConnectionScope(this.dagentKernel))
             {
                 DbCommand command = dagentKernel.CreateDbCommand(selectSql, ParameterConverter.GetKeyValuePairs(parameters));
+                command.Transaction = this.dagentKernel.Transaction;
 
                 DbDataAdapter dataAdapter = dagentKernel.ProviderFactory.CreateDataAdapter();
                 dataAdapter.SelectCommand = command;
@@ -85,9 +88,10 @@ namespace Dagent
 
         public virtual int Update(DataTable dataTable, string selectSql, params Parameter[] parameters)
         {
-            using (ConnectionScope connectionScope = new ConnectionScope(Connection))
+            using (ConnectionScope connectionScope = new ConnectionScope(this.dagentKernel))
             {
                 DbCommand command = dagentKernel.CreateDbCommand(selectSql, ParameterConverter.GetKeyValuePairs(parameters));
+                command.Transaction = this.dagentKernel.Transaction;
 
                 DbDataAdapter dataAdapter = dagentKernel.ProviderFactory.CreateDataAdapter();
                 dataAdapter.SelectCommand = command;
@@ -101,9 +105,10 @@ namespace Dagent
 
         public virtual DbDataReader ExecuteReader(string selectSql, params Parameter[] parameters)
         {
-            using (ConnectionScope connectionScope = new ConnectionScope(Connection))
+            using (ConnectionScope connectionScope = new ConnectionScope(this.dagentKernel))
             {
                 DbCommand command = dagentKernel.CreateDbCommand(selectSql, ParameterConverter.GetKeyValuePairs(parameters));
+                command.Transaction = this.dagentKernel.Transaction;
 
                 return command.ExecuteReader();
             }
@@ -147,17 +152,17 @@ namespace Dagent
 
         public IConnectionScope ConnectionScope()
         {
-            return new ConnectionScope(Connection);
+            return new ConnectionScope(this.dagentKernel);
         }
 
         public ITransactionScope TransactionScope()
         {
-            return new TransactionScope(Connection);
+            return new TransactionScope(this.dagentKernel);
         }
 
         public ITransactionScope TransactionScope(IsolationLevel isolationLevel)
         {
-            return new TransactionScope(Connection, isolationLevel);
+            return new TransactionScope(this.dagentKernel, isolationLevel);
         }
     }
 }

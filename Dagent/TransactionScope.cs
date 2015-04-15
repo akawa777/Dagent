@@ -5,25 +5,25 @@ using System.Text;
 using System.Data.SqlClient;
 using System.Data;
 using System.Data.Common;
+using Dagent.Kernels;
 
 namespace Dagent
 {  
     internal class TransactionScope : ConnectionScope, ITransactionScope
     {
-        public TransactionScope(DbConnection connection)
-            : base(connection)
+        public TransactionScope(IDagentKernel kernel)
+            : base(kernel)
         {
             
         }
 
-        public TransactionScope(DbConnection connection, IsolationLevel isolationLevel)
-            : base(connection)
+        public TransactionScope(IDagentKernel kernel, IsolationLevel isolationLevel)
+            : base(kernel)
         {
             this.isolationLevel = isolationLevel;
             this.settedIsolationLevel = true;
         }
-
-        protected DbTransaction transaction;
+        
         protected bool settedIsolationLevel;
         protected IsolationLevel isolationLevel;
 
@@ -31,37 +31,46 @@ namespace Dagent
         {
             base.BeginOpen();
 
-            if (this.connection.State == ConnectionState.Open)
+            if (this.kernel.Connection.State == ConnectionState.Open)
             {
                 if (settedIsolationLevel)
                 {
-                    transaction = this.connection.BeginTransaction(isolationLevel);                    
+                    this.kernel.Transaction = this.kernel.Connection.BeginTransaction(isolationLevel);                    
                 }
                 else
                 {
-                    transaction = this.connection.BeginTransaction();
+                    this.kernel.Transaction = this.kernel.Connection.BeginTransaction();
                 }
             }
         }
 
         public virtual void Commit()
         {
-            transaction.Commit();
+            this.kernel.Transaction.Commit();
         }
 
         public virtual void Rollback()
         {
-            transaction.Rollback();
+            this.kernel.Transaction.Rollback();
         }
 
         protected override void BeginClose()
         {
-            if (transaction != null && transaction.Connection != null)
-            {   
-                transaction.Rollback();
+            if (this.kernel.Transaction != null && this.kernel.Transaction.Connection != null)
+            {
+                this.kernel.Transaction.Rollback();
             }
 
+            this.kernel.Transaction.Dispose();
+            this.kernel.Transaction = null;
+
             base.BeginClose();
-        }          
+        }
+
+
+        public DbTransaction Transaction
+        {
+            get { return this.kernel.Transaction; }
+        }
     }
 }

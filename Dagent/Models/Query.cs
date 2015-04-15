@@ -36,9 +36,10 @@ namespace Dagent.Models
 
         public virtual int Count()
         {
-            using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel.Connection))
+            using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel))
             {
                 DbCommand command = dagentKernel.CreateDbCommand(dagentKernel.GetSelectCountSql(selectSql, queryOption.UniqueColumnNames), ParameterConverter.GetKeyValuePairs(queryOption.Parameters));
+                command.Transaction = dagentKernel.Transaction;
 
                 foreach (Parameter parameter in queryOption.Parameters)
                 {
@@ -60,7 +61,7 @@ namespace Dagent.Models
 
         public virtual List<T> Page(int pageNo, int noPerPage, out int count)
         {
-            using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel.Connection))
+            using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel))
             {
                 count = Count();
                 return List((pageNo) * noPerPage, noPerPage).ToList();
@@ -79,9 +80,11 @@ namespace Dagent.Models
         
         protected virtual IEnumerable<T> List(int sliceIndex, int sliceNo)
         {
-            using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel.Connection))
+            using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel))
             {
                 DbCommand command = dagentKernel.CreateDbCommand(selectSql, ParameterConverter.GetKeyValuePairs(queryOption.Parameters));
+                command.Transaction = dagentKernel.Transaction;
+
                 List<T> models = new List<T>();
 
                 using (DbDataReader reader = command.ExecuteReader())
@@ -205,9 +208,10 @@ namespace Dagent.Models
 
         public virtual V Scalar<V>()
         {
-            using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel.Connection))
+            using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel))
             {
                 DbCommand command = dagentKernel.CreateDbCommand(selectSql, ParameterConverter.GetKeyValuePairs(queryOption.Parameters));
+                command.Transaction = dagentKernel.Transaction;
 
                 return (V)Convert.ChangeType(command.ExecuteScalar(), typeof(V));
             }
