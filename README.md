@@ -1,6 +1,12 @@
 # Dagent
 Simple microORM for .NET. 
 
+Features are as follows:
+
+1. Easy
+2. Faster
+3. Free
+
 Works with SQL Server, MySQL, and SQLite.
 ## Simple Code
 Data manipulation is possible with a simple code.
