@@ -32,7 +32,12 @@ namespace Dagent.Library
             }
             
             foreach (PropertyInfo property in typeof(T).GetProperties())
-            {                
+            {
+                if (!property.CanWrite)
+                {
+                    continue;
+                }
+
                 string columnName;
 
                 if (!columnNamePropertyMap.TryGetColumnName<T>(property, out columnName))

@@ -41,7 +41,12 @@ namespace Dagent.Models
                 if (this.autoMapping)
                 {
                     foreach (var property in typeof(T).GetProperties())
-                    {                        
+                    {                    
+                        if (!property.CanRead)
+                        {
+                            continue;
+                        }
+
                         DbType? dbType = dagentKernel.GetDbType(property.PropertyType);
                         string columnName;
                         if (dbType.HasValue && columnNamePropertyMap.TryGetColumnName<T>(property, out columnName))

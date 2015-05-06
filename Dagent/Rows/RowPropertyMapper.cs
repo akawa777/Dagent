@@ -53,6 +53,13 @@ namespace Dagent.Rows
         {
             if (targetPropertyExpression != null)
             {
+                PropertyInfo property = ExpressionParser.GetPropertyInfo(targetPropertyExpression);
+
+                if (!property.CanWrite)
+                {
+                    return;
+                }
+
                 P value = new P();
 
                 bool success = true;
@@ -64,8 +71,6 @@ namespace Dagent.Rows
 
                 if (success)
                 {
-                    PropertyInfo property = ExpressionParser.GetPropertyInfo(targetPropertyExpression);
-
                     DynamicMethodBuilder<T, P>.CreateSetMethod(property)(model, value);
 
                     if (mapAction != null)
@@ -74,9 +79,14 @@ namespace Dagent.Rows
                     }
                 }
             }
-            else
+            else if (targetListPropertyExpression != null)
             {
                 PropertyInfo property = ExpressionParser.GetPropertyInfo(targetListPropertyExpression);
+
+                if (!property.CanWrite || !property.CanRead)
+                {
+                    return;
+                }
 
                 Func<T, List<P>> getMethod = DynamicMethodBuilder<T, List<P>>.CreateGetMethod(property);
 
