@@ -25,6 +25,7 @@ namespace Dagent
         IQuery<T> Each(Action<T, ICurrentRow> mapAction);
         IQuery<T> Auto(bool autoMapping);        
 
-        IQuery<T> Config(Action<IConfig> setConfigAction);
+        IQuery<T> Ignore(params Expression<Func<T, object>>[] ignoreProperties);
+        IQuery<T> IgnoreCase(bool ignore);
     }
 }

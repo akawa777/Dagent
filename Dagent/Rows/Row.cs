@@ -179,11 +179,11 @@ namespace Dagent.Rows
 
         private ColumnNamePropertyMap columnNamePropertyMap;
 
-        public T Map<T>(string[] validColumnNames, string prefixColumnName) where T : class, new()
+        public T Map<T>(string[] validColumnNames, string prefixColumnName, bool ignoreCase) where T : class, new()
         {
             T model = new T();
 
-            bool success = ModelMapper<T>.Map(model, this, validColumnNames, prefixColumnName, columnNamePropertyMap);
+            bool success = ModelMapper<T>.Map(model, this, validColumnNames, prefixColumnName, columnNamePropertyMap, ignoreCase);
 
             if (success)
             {
@@ -199,14 +199,14 @@ namespace Dagent.Rows
             where T : class, new()
             where P : class, new()
         {
-            return new RowPropertyMapper<T, P>(model, this, targetPropertyExpression, validColumnNames, columnNamePropertyMap);
+            return new RowPropertyMapper<T, P>(model, this, targetPropertyExpression, validColumnNames);
         }
 
         public IRowPropertyMapper<T, P> Map<T, P>(T model, Expression<Func<T, List<P>>> targetListPropertyExpression, params string[] validColumnNames)
             where T : class, new()
             where P : class, new()
         {
-            return new RowPropertyMapper<T, P>(model, this, targetListPropertyExpression, validColumnNames, columnNamePropertyMap);
+            return new RowPropertyMapper<T, P>(model, this, targetListPropertyExpression, validColumnNames);
         }        
     }
 

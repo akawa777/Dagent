@@ -8,17 +8,18 @@ using System.Linq.Expressions;
 namespace Dagent.Library
 {
     internal static class PropertyCache<T>
-    {
+    {        
         static PropertyCache()
         {
             properties = typeof(T).GetProperties();
             foreach (PropertyInfo property in properties)
             {
-                map[property.Name] = property;
+                map[property.Name] = property;                
+                
             }
         }
-
-        private static readonly Dictionary<string, PropertyInfo> map = new Dictionary<string, PropertyInfo>();
+        
+        private static Dictionary<string, PropertyInfo> map = new Dictionary<string, PropertyInfo>();        
         private static PropertyInfo[] properties;
 
         public static PropertyInfo GetProperty(string propertyName)

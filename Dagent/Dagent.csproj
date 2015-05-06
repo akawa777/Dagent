@@ -43,14 +43,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Config.cs" />
     <Compile Include="Exceptions\ExceptionMessges.cs" />
     <Compile Include="IConnectionScope.cs" />
     <Compile Include="ITransactionScope.cs" />
     <Compile Include="ConnectionScope.cs" />
     <Compile Include="ITextBuilder.cs" />
     <Compile Include="Library\ColumnNamePropertyMap.cs" />
-    <Compile Include="Models\IMappingState.cs" />
     <Compile Include="Rows\IBaseRow.cs" />
     <Compile Include="Rows\ICurrentRow.cs" />
     <Compile Include="Rows\INextRow.cs" />
@@ -63,7 +61,6 @@
     <Compile Include="Rows\UpdateRow.cs" />
     <Compile Include="Rows\IRowDiffer.cs" />
     <Compile Include="Rows\IRow.cs" />
-    <Compile Include="Rows\NextRow.cs" />
     <Compile Include="Parameter.cs" />
     <Compile Include="DagentDatabase.cs" />
     <Compile Include="Kernels\SQLiteDagentKernel.cs" />
@@ -75,7 +72,6 @@
     <Compile Include="Library\ParameterConverter.cs" />
     <Compile Include="Library\PropertyCache.cs" />
     <Compile Include="Models\Command.cs" />
-    <Compile Include="Models\MappingState.cs" />
     <Compile Include="Models\Query.cs" />
     <Compile Include="ICommand.cs" />
     <Compile Include="IQuery.cs" />

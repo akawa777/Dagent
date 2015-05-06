@@ -23,25 +23,28 @@ namespace Dagent.Models
         {
             this.dagentKernel = dagentKernel;
             this.selectSql = selectSql;
-            queryOption.Parameters = parameters == null ? new Parameter[0] : parameters;
-
-            config = new Config(columnNamePropertyMap);
+            this.parameters = parameters == null ? new Parameter[0] : parameters;
         }
 
-        protected IDagentKernel dagentKernel;
-        protected string selectSql;
-        protected QueryOption<T> queryOption = new QueryOption<T>();
+        private IDagentKernel dagentKernel;
+        private string selectSql;        
         private ColumnNamePropertyMap columnNamePropertyMap = new ColumnNamePropertyMap();
-        private Config config;
+
+        private Parameter[] parameters;
+        private string[] uniqueColumnNames = new string[0];
+        private string prefixColumnName { get; set; }
+        private bool autoMapping = true;
+        private Action<T, ICurrentRow> mapAction = (model, row) => { };
+        private bool ignoreCase = false;
 
         public virtual int Count()
         {
             using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel))
             {
-                DbCommand command = dagentKernel.CreateDbCommand(dagentKernel.GetSelectCountSql(selectSql, queryOption.UniqueColumnNames), ParameterConverter.GetKeyValuePairs(queryOption.Parameters));
+                DbCommand command = dagentKernel.CreateDbCommand(dagentKernel.GetSelectCountSql(selectSql, this.uniqueColumnNames), ParameterConverter.GetKeyValuePairs(this.parameters));
                 command.Transaction = dagentKernel.Transaction;
 
-                foreach (Parameter parameter in queryOption.Parameters)
+                foreach (Parameter parameter in this.parameters)
                 {
                     command.Parameters.Add(dagentKernel.CreateDbParameter(parameter.Name, parameter.Value));
                 }
@@ -82,7 +85,7 @@ namespace Dagent.Models
         {
             using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel))
             {
-                DbCommand command = dagentKernel.CreateDbCommand(selectSql, ParameterConverter.GetKeyValuePairs(queryOption.Parameters));
+                DbCommand command = dagentKernel.CreateDbCommand(selectSql, ParameterConverter.GetKeyValuePairs(this.parameters));
                 command.Transaction = dagentKernel.Transaction;
 
                 List<T> models = new List<T>();
@@ -98,9 +101,7 @@ namespace Dagent.Models
                     CurrentRow prevRow = null;                                        
 
                     bool firstRow = true;
-                    bool canYeld = sliceNo == 0 ? true : false;
-
-                    QueryOption<T> option = null;  
+                    bool canYeld = sliceNo == 0 ? true : false;                    
 
                     List<CurrentRow> currentRows = new List<CurrentRow>();
 
@@ -122,20 +123,11 @@ namespace Dagent.Models
                             reader.GetValues(currentRow.Values);
                             currentRow.PrevRow = prevRow;
 
-                            requestNewModel = queryOption.UniqueColumnNames.Length == 0 ? true : !currentRow.Compare(currentRow.PrevRow, queryOption.UniqueColumnNames);
+                            requestNewModel = uniqueColumnNames.Length == 0 ? true : !currentRow.Compare(currentRow.PrevRow, uniqueColumnNames);
                             
                             if (canYeld && requestNewModel)
                             {
-                                option = new QueryOption<T>
-                                {
-                                    AutoMapping = queryOption.AutoMapping,                                    
-                                    MapAction = queryOption.MapAction,
-                                    Parameters = queryOption.Parameters,
-                                    PrefixColumnName = queryOption.PrefixColumnName,
-                                    UniqueColumnNames = queryOption.UniqueColumnNames
-                                };
-
-                                yield return GetModel(model, option, currentRows);
+                                yield return GetModel(model, currentRows);
                                 currentRows = new List<CurrentRow>();
                             }
                         }
@@ -160,9 +152,9 @@ namespace Dagent.Models
 
                         if (requestNewModel)
                         {   
-                            if (queryOption.AutoMapping)
+                            if (autoMapping)
                             {   
-                                model = currentRow.Map<T>(new string[0], queryOption.PrefixColumnName);                                
+                                model = currentRow.Map<T>(new string[0], prefixColumnName, ignoreCase);                                
                             }
                             else
                             {
@@ -176,30 +168,21 @@ namespace Dagent.Models
                         }
                     }
 
-                    option = new QueryOption<T>
-                    {
-                        AutoMapping = queryOption.AutoMapping,                        
-                        MapAction = queryOption.MapAction,
-                        Parameters = queryOption.Parameters,
-                        PrefixColumnName = queryOption.PrefixColumnName,
-                        UniqueColumnNames = queryOption.UniqueColumnNames
-                    };
-
                     if (model != null)
                     {
-                        yield return GetModel(model, option, currentRows);
+                        yield return GetModel(model, currentRows);
                     }
                 }
             }
         }
 
-        private T GetModel (T model, QueryOption<T> queryOption, List<CurrentRow> currentRows)
+        private T GetModel (T model, List<CurrentRow> currentRows)
         {
-            if (queryOption.MapAction != null)
+            if (mapAction != null)
             {
                 foreach (CurrentRow currentRow in currentRows)
                 {
-                    queryOption.MapAction(model, currentRow);    
+                    mapAction(model, currentRow);    
                 }   
             }
 
@@ -210,7 +193,7 @@ namespace Dagent.Models
         {
             using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel))
             {
-                DbCommand command = dagentKernel.CreateDbCommand(selectSql, ParameterConverter.GetKeyValuePairs(queryOption.Parameters));
+                DbCommand command = dagentKernel.CreateDbCommand(selectSql, ParameterConverter.GetKeyValuePairs(parameters));
                 command.Transaction = dagentKernel.Transaction;
 
                 return (V)Convert.ChangeType(command.ExecuteScalar(), typeof(V));
@@ -219,20 +202,20 @@ namespace Dagent.Models
 
         public virtual IQuery<T> Unique(params string[] columnNames)
         {
-            queryOption.UniqueColumnNames = columnNames;
+            this.uniqueColumnNames = columnNames;
             return this;
         }
 
         public IQuery<T> Prefix(string prefixColumnName)
         {
-            queryOption.PrefixColumnName = prefixColumnName;
+            this.prefixColumnName = prefixColumnName;
 
             return this;
         }
 
         public virtual IQuery<T> Auto(bool autoMapping)
         {
-            queryOption.AutoMapping = autoMapping;
+            this.autoMapping = autoMapping;
             return this;
         }        
 
@@ -240,11 +223,11 @@ namespace Dagent.Models
         {
             if (parameters == null)
             {
-                queryOption.Parameters = new Parameter[0];
+                this.parameters = new Parameter[0];
             }
             else
             {
-                queryOption.Parameters = parameters;
+                this.parameters = parameters;
             }
 
             return this;
@@ -260,21 +243,28 @@ namespace Dagent.Models
         {
             if (mapAction == null)
             {
-                queryOption.MapAction = (mdel, currentRow) => { };
+                this.mapAction = (mdel, currentRow) => { };
             }
             else
             {
-                queryOption.MapAction = mapAction;
+                this.mapAction = mapAction;
             }
             return this;
         }
 
-        public IQuery<T> Config(Action<IConfig> setConfigAction)
+        public IQuery<T> Ignore(params Expression<Func<T, object>>[] ignoreProperties)
         {
-            if (setConfigAction != null)
+            foreach (var property in ignoreProperties)
             {
-                setConfigAction(config);
+                this.columnNamePropertyMap.IgnoreProperty<T>(ExpressionParser.GetPropertyInfo<T, object>(property));
             }
+            
+            return this;
+        }
+
+        public IQuery<T> IgnoreCase(bool ignore)
+        {
+            ignoreCase = ignore;
 
             return this;
         }

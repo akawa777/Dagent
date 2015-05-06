@@ -235,15 +235,6 @@ namespace Dagent.Kernels
 
         public virtual bool OnlyTableName(string selectSql)
         {
-            //if (Regex.IsMatch(selectSql, @"\s|\n|\t"))
-            //{
-            //    return false;
-            //}
-            //else
-            //{
-            //    return true;
-            //}
-
             if (selectSql.IndexOf(Environment.NewLine) == -1 && selectSql.IndexOf("\t") == -1 && selectSql.IndexOf(" ") == -1)
             {
                 return true;
@@ -253,7 +244,6 @@ namespace Dagent.Kernels
                 return false;
             }
         }
-
 
         public virtual DbParameter CreateDbParameter(string name, object value)
         {

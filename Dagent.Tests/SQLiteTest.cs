@@ -213,14 +213,43 @@ namespace Dagent.Tests
                 .Unique("customerId")
                 .Each((model, row) =>
                 {
-                    row.Map(model, x => x.Business, "businessName").Do();
+                    row.Map(model, x => x.Business, "businessName").Each(x => 
+                    {
+                        x.BusinessId = row.Get<int>("businessId");
+                        x.BusinessName = row.Get<string>("businessName");                            
+                    }).Do();
+
                     row.Map(model, x => x.CustomerPurchases, "no").Do();
-                })                
-                .Config(config =>
+                })
+                .List();
+
+            ValidList(customers);
+        }
+
+        [TestMethod]
+        public void FetchForOneToOneUsedIgnoreCase()
+        {
+            IDagentDatabase database = new DagentDatabase("SQLite");
+            List<CustomerWithBusiness> customers = database.Query<CustomerWithBusiness>(@"
+                select 
+                    *
+                from 
+                    customers c 
+                inner join
+                    business b
+                on
+                    c.businessId = b.businessId
+                inner join 
+                    customerPurchases cp 
+                on 
+                    c.customerId = cp.customerId                 
+	            order by 
+                    c.customerId, cp.no")
+                .Unique("customerId")
+                .Each((model, row) =>
                 {
-                    config.Map<Business>()
-                        .Column(x => x.BusinessId, "businessId")
-                        .Column(x => x.BusinessName, "businessName");
+                    row.Map(model, x => x.Business, "businessName").IgnoreCase(true).Do();
+                    row.Map(model, x => x.CustomerPurchases, "no").Do();
                 })
                 .List();
 
@@ -368,14 +397,10 @@ namespace Dagent.Tests
                             c.customerId = cp.customerId                 
         	            order by 
                             c.customerId, cp.no")
-                .Unique("customerId")
-                .Config(config => 
-                {
-                    config.Map<Customer>().Ignore(x => x.name);
-                    config.Map<CustomerPurchase>().Ignore(ignoreProperty);
-                })
+                .Unique("customerId")                
+                .Ignore(x => x.name)
                 .Each((model, row) => {
-                    row.Map(model, x => x.CustomerPurchases, "no").Do();
+                    row.Map(model, x => x.CustomerPurchases, "no").Ignore(ignoreProperty).Do();
                 })
                 .List();
 
@@ -407,12 +432,8 @@ namespace Dagent.Tests
         	            order by 
                             c.customerId, cp.no")
                 .Unique("customerId")
-                .Config(config => 
-                {
-                    config.Map<Customer>().Ignore(x => x.name);
-                    config.Map<CustomerPurchase>().Ignore(x => x.content);
-                })
-                .Each((model, row) => row.Map(model, x => x.CustomerPurchases, "no").Do())
+                .Ignore(x => x.name)                
+                .Each((model, row) => row.Map(model, x => x.CustomerPurchases, "no").Ignore(x => x.content).Do())
                 .List();
 
             foreach (var customer in customers)
@@ -648,13 +669,12 @@ namespace Dagent.Tests
                         BusinessName = "business_" + i.ToString()
 
                     };
-                    database.Command<Business>("business", "businessId")
-                        .Config(config => 
+                    database.Command<Business>("business", "businessId")   
+                        .Ignore(x => x.BusinessId, x => x.BusinessName)
+                        .Map((row, model) => 
                         {
-                            config.Map<Business>()
-                                .Column(x => x.BusinessId, "businessId")
-                                .Column(x => x.BusinessName, "businessName");
-                            
+                            row["businessId"] = model.BusinessId;
+                            row["businessName"] = model.BusinessName;
                         })
                         .Insert(business);
                 }
@@ -896,7 +916,7 @@ namespace Dagent.Tests
 
         [TestCleanup]
         public void Cleanup()
-        {            
+        {
             //if (!refreshTestData) return;
 
             //DagentDatabase database = new DagentDatabase("SQLite");

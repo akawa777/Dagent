@@ -16,22 +16,22 @@ namespace Dagent.Rows
         where T : class, new()
         where P : class, new()
     {
-        public RowPropertyMapper(T model, Row row, Expression<Func<T, P>> targetPropertyExpression, string[] validColumnNames, ColumnNamePropertyMap columnNamePropertyMap)
+        public RowPropertyMapper(T model, Row row, Expression<Func<T, P>> targetPropertyExpression, string[] validColumnNames)
         {
             this.model = model;
             this.row = row;
             this.targetPropertyExpression = targetPropertyExpression;
             this.validColumnNames = validColumnNames;
-            this.columnNamePropertyMap = columnNamePropertyMap;
+            this.columnNamePropertyMap = new ColumnNamePropertyMap();
         }
 
-        public RowPropertyMapper(T model, Row row, Expression<Func<T, List<P>>> targetListPropertyExpression, string[] validColumnNames, ColumnNamePropertyMap columnNamePropertyMap)
+        public RowPropertyMapper(T model, Row row, Expression<Func<T, List<P>>> targetListPropertyExpression, string[] validColumnNames)
         {
             this.model = model;
             this.row = row;
             this.targetListPropertyExpression = targetListPropertyExpression;
             this.validColumnNames = validColumnNames;
-            this.columnNamePropertyMap = columnNamePropertyMap;
+            this.columnNamePropertyMap = new ColumnNamePropertyMap();
         }
 
         private T model;
@@ -45,6 +45,7 @@ namespace Dagent.Rows
         private Expression<Func<P, object>>[] ignorePropertyExpressions = new Expression<Func<P, object>>[0];
         private bool autoMapping = true;
         private Action<P> mapAction;
+        private bool ignoreCase = false;
 
         private ColumnNamePropertyMap columnNamePropertyMap;
 
@@ -58,7 +59,7 @@ namespace Dagent.Rows
 
                 if (autoMapping)
                 {
-                    success = ModelMapper<P>.Map(value, row, validColumnNames, prefixColumnName, columnNamePropertyMap);
+                    success = ModelMapper<P>.Map(value, row, validColumnNames, prefixColumnName, columnNamePropertyMap, ignoreCase);
                 }
 
                 if (success)
@@ -106,7 +107,7 @@ namespace Dagent.Rows
 
                     if (autoMapping)
                     {
-                        success = ModelMapper<P>.Map(value, row, validColumnNames, prefixColumnName, columnNamePropertyMap);
+                        success = ModelMapper<P>.Map(value, row, validColumnNames, prefixColumnName, columnNamePropertyMap, ignoreCase);
                     }
 
                     if (success)
@@ -147,6 +148,25 @@ namespace Dagent.Rows
         public IRowPropertyMapper<T, P> Each(Action<P> mapAction)
         {
             this.mapAction = mapAction;
+
+            return this;
+        }
+
+
+        public IRowPropertyMapper<T, P> Ignore(params Expression<Func<P, object>>[] ignoreProperties)
+        {
+            foreach (var property in ignoreProperties)
+            {
+                this.columnNamePropertyMap.IgnoreProperty<P>(ExpressionParser.GetPropertyInfo<P, object>(property));
+            }
+
+            return this;
+        }
+
+
+        public IRowPropertyMapper<T, P> IgnoreCase(bool ignore)
+        {
+            ignoreCase = ignore;
 
             return this;
         }

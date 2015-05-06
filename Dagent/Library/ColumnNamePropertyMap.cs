@@ -10,7 +10,7 @@ namespace Dagent.Library
     {
         private Dictionary<string, PropertyInfo> columnMap = new Dictionary<string, PropertyInfo>();
         private Dictionary<string, string> propertyNameMap = new Dictionary<string, string>();
-        private Dictionary<string, PropertyInfo> propertyNameIgnoreMap = new Dictionary<string, PropertyInfo>();   
+        private Dictionary<string, PropertyInfo> propertyNameIgnoreMap = new Dictionary<string, PropertyInfo>();        
      
         private string GetKey<T>(string columnName)
         {
@@ -58,7 +58,7 @@ namespace Dagent.Library
             {
                 if (keyValue.Key.Split(':')[0] == typeof(T).FullName)
                 {
-                    if (!rtn && RemoveIgnore<T>(keyValue.Value))
+                    if (!rtn && RemoveIgnoreProperty<T>(keyValue.Value))
                     {
                         rtn = true;
                     }
@@ -114,12 +114,12 @@ namespace Dagent.Library
             return true;
         }
 
-        public void Ignore<T>(PropertyInfo property)
+        public void IgnoreProperty<T>(PropertyInfo property)
         {
             propertyNameIgnoreMap[GetKey<T>(property)] = property;
         }
 
-        public bool RemoveIgnore<T>(PropertyInfo property)
+        public bool RemoveIgnoreProperty<T>(PropertyInfo property)
         {
             return propertyNameIgnoreMap.Remove(GetKey<T>(property));
         }

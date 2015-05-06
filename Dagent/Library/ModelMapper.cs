@@ -8,12 +8,15 @@ using System.Data.Common;
 using System.Reflection.Emit;
 using Dagent.Rows;
 using System.ComponentModel;
+using System.Globalization;
 
 namespace Dagent.Library
 {
     internal static class ModelMapper<T>
     {
-        public static bool Map(T model, IRow dagentRow, string[] validColumnNames, string prefixColumnName, ColumnNamePropertyMap columnNamePropertyMap)
+        private static TextInfo textInfo = System.Globalization.CultureInfo.CurrentCulture.TextInfo;
+
+        public static bool Map(T model, IRow dagentRow, string[] validColumnNames, string prefixColumnName, ColumnNamePropertyMap columnNamePropertyMap, bool ignoreCase)
         {   
             bool existData = false;
 
@@ -45,9 +48,24 @@ namespace Dagent.Library
                 Action<T, object> setter = DynamicMethodBuilder<T>.CreateSetMethod(property);
 
                 object value; 
+
                 if (!dagentRow.TryGetValue(columnName, out value))
                 {
-                    continue;
+                    if (ignoreCase)
+                    {
+                        foreach (string name in dagentRow.ColumnNames)
+                        {
+                            if (String.Compare(name, property.Name, true) == 0)
+                            {
+                                value = dagentRow[name];
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        continue;
+                    }
                 }
 
                 if (CanChangeType(value, property.PropertyType))

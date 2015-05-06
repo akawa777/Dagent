@@ -24,37 +24,22 @@ namespace Dagent.Models
             this.dagentKernel = dagentKernel;
             this.tableName = tableName;
             this.primaryKeys = primaryKeys;
-
-            config = new Config(columnNamePropertyMap);
         }
 
-        protected IDagentKernel dagentKernel;
-        protected string tableName;
-        private ColumnNamePropertyMap columnNamePropertyMap = new ColumnNamePropertyMap();
-        private Config config;
+        private IDagentKernel dagentKernel;
+        private string tableName;
+        private ColumnNamePropertyMap columnNamePropertyMap = new ColumnNamePropertyMap();        
         private string[] primaryKeys;
+        private bool autoMapping = true;
+        private Action<IUpdateRow, T> mapAction = (row, model) => { };
 
         protected virtual int Execute(DataRowState rowState, T entity)
         {
-            if (primaryKeys != null)
-            {
-                foreach (string key in primaryKeys)
-                {
-                    PropertyInfo property;
-                    if (!columnNamePropertyMap.TryGetProperty<T>(key, out property))
-                    {
-                        throw new Exception(ExceptionMessges.NotExistProperty(typeof(T), key));
-                    }
-
-                    this.commandOption.PrimaryKeys[key] = DynamicMethodBuilder<T>.CreateGetMethod(property);
-                }
-            }
-
             using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel))
             {
                 Dictionary<string, object> columnValueMap = new Dictionary<string, object>();
 
-                if (commandOption.AutoMapping)
+                if (this.autoMapping)
                 {
                     foreach (var property in typeof(T).GetProperties())
                     {                        
@@ -69,13 +54,13 @@ namespace Dagent.Models
 
                 UpdateRow updateRow = new UpdateRow(columnValueMap);
 
-                commandOption.MapAction(updateRow, entity);
+                this.mapAction(updateRow, entity);
 
                 List<KeyValuePair<string, object>> primaryKeyParameters = new List<KeyValuePair<string, object>>();
 
-                foreach (string key in commandOption.PrimaryKeys.Keys)
+                foreach (string key in this.primaryKeys)
                 {
-                    primaryKeyParameters.Add(new KeyValuePair<string, object>(key, commandOption.PrimaryKeys[key](entity)));
+                    primaryKeyParameters.Add(new KeyValuePair<string, object>(key, updateRow[key]));
                 }
 
                 List<KeyValuePair<string, object>> valueParameters = new List<KeyValuePair<string, object>>();
@@ -98,11 +83,11 @@ namespace Dagent.Models
                 }
                 else if (rowState == DataRowState.Modified)
                 {
-                    sql = dagentKernel.GetUpdateSql(tableName, commandOption.PrimaryKeys.Keys.ToArray(), updateRow.ColumnNames);
+                    sql = dagentKernel.GetUpdateSql(tableName, this.primaryKeys, updateRow.ColumnNames);
                 }
                 else if (rowState == DataRowState.Deleted)
                 {
-                    sql = dagentKernel.GetDeleteSql(tableName, commandOption.PrimaryKeys.Keys.ToArray());
+                    sql = dagentKernel.GetDeleteSql(tableName, this.primaryKeys);
                 }
 
                 DbCommand command = dagentKernel.CreateDbCommand(sql, valueParameters.ToArray());
@@ -110,9 +95,7 @@ namespace Dagent.Models
 
                 return command.ExecuteNonQuery();
             }
-        }
-
-        protected CommandOption<T> commandOption = new CommandOption<T>();
+        }        
 
         public virtual int Insert(T entity)
         {
@@ -133,11 +116,11 @@ namespace Dagent.Models
         {
             if (mapAction == null)
             {
-                commandOption.MapAction = (t, row) => { };
+                this.mapAction = (t, row) => { };
             }
             else
             {
-                commandOption.MapAction = mapAction;
+                this.mapAction = mapAction;
             }
 
             return this;
@@ -145,15 +128,15 @@ namespace Dagent.Models
 
         public virtual ICommand<T> Auto(bool autoMapping)
         {
-            commandOption.AutoMapping = autoMapping;
+            this.autoMapping = autoMapping;
             return this;
         }
 
-        public ICommand<T> Config(Action<IConfig> setConfigAction)
+        public ICommand<T> Ignore(params Expression<Func<T, object>>[] ignoreProperties)
         {
-            if (setConfigAction != null)
+            foreach (var property in ignoreProperties)
             {
-                setConfigAction(config);
+                this.columnNamePropertyMap.IgnoreProperty<T>(ExpressionParser.GetPropertyInfo<T, object>(property));
             }
 
             return this;
