@@ -13,7 +13,7 @@ using Dagent.Exceptions;
 namespace Dagent.Rows
 {
 
-    internal abstract class Row : IRow, IRowCompare, IRowModelMapper, IRowPropertyMapDefine
+    internal abstract class Row : IRow, IRowCompare, IRowPropertyMapper
     {
         public Row(Row row, bool canSetValue)
         {
@@ -23,17 +23,13 @@ namespace Dagent.Rows
             values = new object[columnCount];
             if (canSetValue) Array.Copy(row.values, values, values.Length);
             valueMap = row.valueMap;
-
-            columnNamePropertyMap = row.columnNamePropertyMap;
         }
 
-        public Row(IDataReader dataReader, ColumnNamePropertyMap columnNamePropertyMap)
+        public Row(IDataReader dataReader)
         {
             columnCount = dataReader.FieldCount;
             columnTypes = new Type[columnCount];
             columnNames = new string[columnCount];
-
-            this.columnNamePropertyMap = columnNamePropertyMap;
 
             values = new object[columnCount];
             dataReader.GetValues(values);
@@ -175,24 +171,6 @@ namespace Dagent.Rows
             }
 
             return true;
-        }
-
-        private ColumnNamePropertyMap columnNamePropertyMap;
-
-        public T Map<T>(string[] validColumnNames, string prefixColumnName, bool ignoreCase) where T : class, new()
-        {
-            T model = new T();
-
-            bool success = ModelMapper<T>.Map(model, this, validColumnNames, prefixColumnName, columnNamePropertyMap, ignoreCase);
-
-            if (success)
-            {
-                return model;
-            }
-            else
-            {
-                return null;
-            }
         }
 
         public IRowPropertyMapper<T, P> Map<T, P>(T model, Expression<Func<T, P>> targetPropertyExpression, params string[] validColumnNames)

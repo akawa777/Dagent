@@ -10,13 +10,8 @@ using System.Data.Common;
 using System.Data;
 
 namespace Dagent.Rows
-{  
-    public interface IRowModelMapper
-    {
-        T Map<T>(string[] validColumnNames, string prefixColumnName, bool ignoreCase) where T : class, new();
-    }
-
-    public interface IRowPropertyMapDefine
+{
+    public interface IRowPropertyMapper
     {
         IRowPropertyMapper<T, P> Map<T, P>(T model, Expression<Func<T, P>> targetPropertyExpression, params string[] validColumnNames) 
             where T : class, new() 

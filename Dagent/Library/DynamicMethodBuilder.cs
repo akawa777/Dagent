@@ -20,7 +20,7 @@ namespace Dagent.Library
         }
     }
 
-    internal class DynamicMethodBuilder<T, P>
+    internal static class DynamicMethodBuilder<T, P>
     {
         private static readonly Dictionary<string, Action<T, P>> setterCache = new Dictionary<string, Action<T, P>>();
         public static Action<T, P> CreateSetMethod(PropertyInfo propertyInfo)

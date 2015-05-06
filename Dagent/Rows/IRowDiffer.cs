@@ -12,7 +12,6 @@ namespace Dagent.Rows
 {
     public interface IRowCompare
     {
-        bool Compare(IRow dagentRow, params string[] columnNames);
-        //bool Compare(object[] values, params int[] indexes);        
+        bool Compare(IRow dagentRow, params string[] columnNames);        
     }
 }

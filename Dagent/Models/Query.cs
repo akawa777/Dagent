@@ -8,7 +8,6 @@ using System.Data.Common;
 using System.Reflection;
 using System.Linq.Expressions;
 using System.Collections;
-using Dagent.Options;
 using Dagent.Library;
 using System.Runtime.CompilerServices;
 using Dagent;
@@ -106,13 +105,15 @@ namespace Dagent.Models
                     List<CurrentRow> currentRows = new List<CurrentRow>();
 
                     T model = null;
+
+                    string[] validColumnNames = new string[0];
                     
                     while (reader.Read())
                     {
                         if (firstRow)
                         {
                             model = new T();
-                            currentRow = new CurrentRow(reader, columnNamePropertyMap);                            
+                            currentRow = new CurrentRow(reader);                            
                             firstRow = false;                            
                         }
                         else
@@ -151,14 +152,12 @@ namespace Dagent.Models
                         currentRows.Add(currentRow);                        
 
                         if (requestNewModel)
-                        {   
+                        {
+                            model = new T();
+
                             if (autoMapping)
-                            {   
-                                model = currentRow.Map<T>(new string[0], prefixColumnName, ignoreCase);                                
-                            }
-                            else
                             {
-                                model = new T();
+                                ModelMapper<T>.Map(model, currentRow, validColumnNames, prefixColumnName, columnNamePropertyMap, ignoreCase);
                             }
                         }
 

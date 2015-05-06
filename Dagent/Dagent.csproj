@@ -51,13 +51,12 @@
     <Compile Include="Library\ColumnNamePropertyMap.cs" />
     <Compile Include="Rows\IBaseRow.cs" />
     <Compile Include="Rows\ICurrentRow.cs" />
-    <Compile Include="Rows\INextRow.cs" />
     <Compile Include="Rows\IUpdateRow.cs" />
     <Compile Include="Rows\RowPropertyMapper.cs" />
     <Compile Include="TextBuilder.cs" />
     <Compile Include="Rows\Row.cs" />
     <Compile Include="Rows\CurrentRow.cs" />
-    <Compile Include="Rows\IRowMapper.cs" />
+    <Compile Include="Rows\IRowPropertyMapper.cs" />
     <Compile Include="Rows\UpdateRow.cs" />
     <Compile Include="Rows\IRowDiffer.cs" />
     <Compile Include="Rows\IRow.cs" />
@@ -77,10 +76,8 @@
     <Compile Include="IQuery.cs" />
     <Compile Include="Library\ExpressionParser.cs" />
     <Compile Include="Library\ModelMapper.cs" />
-    <Compile Include="Options\QueryOption.cs" />
     <Compile Include="TransactionScope.cs" />
     <Compile Include="Models\DagentKernelFactory.cs" />
-    <Compile Include="Options\CommandOption.cs" />
     <Compile Include="IDagentDatabase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

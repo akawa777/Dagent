@@ -16,7 +16,7 @@ namespace Dagent.Library
     {
         private static TextInfo textInfo = System.Globalization.CultureInfo.CurrentCulture.TextInfo;
 
-        public static bool Map(T model, IRow dagentRow, string[] validColumnNames, string prefixColumnName, ColumnNamePropertyMap columnNamePropertyMap, bool ignoreCase)
+        public static bool Map(T model, IRow row, string[] validColumnNames, string prefixColumnName, ColumnNamePropertyMap columnNamePropertyMap, bool ignoreCase)
         {   
             bool existData = false;
 
@@ -31,7 +31,7 @@ namespace Dagent.Library
                 }
             }
             
-            foreach (PropertyInfo property in PropertyCache<T>.GetProperties())
+            foreach (PropertyInfo property in typeof(T).GetProperties())
             {                
                 string columnName;
 
@@ -47,17 +47,17 @@ namespace Dagent.Library
 
                 Action<T, object> setter = DynamicMethodBuilder<T>.CreateSetMethod(property);
 
-                object value; 
+                object value;
 
-                if (!dagentRow.TryGetValue(columnName, out value))
+                if (!row.TryGetValue(columnName, out value))
                 {
                     if (ignoreCase)
                     {
-                        foreach (string name in dagentRow.ColumnNames)
+                        foreach (string name in row.ColumnNames)
                         {
                             if (String.Compare(name, property.Name, true) == 0)
                             {
-                                value = dagentRow[name];
+                                value = row[name];
                                 break;
                             }
                         }
