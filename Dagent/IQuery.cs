@@ -13,7 +13,7 @@ namespace Dagent
     public interface IQuery<T> where T : class, new()
     {
         T Single();
-        List<T> List();
+        List<T> List();        
         List<T> Page(int pageNo, int noPerPage, out int count);        
         int Count();
         V Scalar<V>();

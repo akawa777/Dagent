@@ -16,7 +16,10 @@ namespace Dagent.Kernels
         }
 
         public virtual DbProviderFactory ProviderFactory { get; set; }
-        public virtual DbConnection Connection { get; set; }        
+        public virtual DbConnection Connection { get; set; }
+
+        private Regex rxColumns = new Regex(@"\A\s*SELECT\s+((?:\((?>\((?<depth>)|\)(?<-depth>)|.?)*(?(depth)(?!))\)|.)*?)(?<!,\s+)\bFROM\b", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Singleline | RegexOptions.Compiled);
+        private Regex rxOrderBy = new Regex(@"\bORDER\s+BY\s+(?:\((?>\((?<depth>)|\)(?<-depth>)|.?)*(?(depth)(?!))\)|[\w\.\[\] ""`])+(?:\s+(?:ASC|DESC))?(?:\s*,\s*(?:\((?>\((?<depth>)|\)(?<-depth>)|.?)*(?(depth)(?!))\)|[\w\.\[\] ""`])+(?:\s+(?:ASC|DESC))?)*(?!.*FROM)", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Singleline | RegexOptions.Compiled);
 
         protected virtual string ParameterPrefix
         {
@@ -114,31 +117,16 @@ namespace Dagent.Kernels
 
         public virtual string GetSelectCountSql(string selectSql, string[] uniqueKeys)
         {
+            string selectSqlUnordered = rxOrderBy.Replace(selectSql, string.Empty);
             if (uniqueKeys == null || uniqueKeys.Length == 0)
             {
-                return string.Format("select count(*) from ( {0} ) countTable ", selectSql);
+                return string.Format("select count(*) from ( {0} ) countTable ", selectSqlUnordered);
             }
             else
             {
-                StringBuilder columnSql = new StringBuilder();
-                StringBuilder groupBySql = new StringBuilder();
+                string columnSql = string.Join(", ", uniqueKeys);
 
-                int index = -1;
-                foreach (string key in uniqueKeys)
-                {
-                    index++;
-                    if (index == 0)
-                    {
-                        columnSql.Append(key);                        
-                    }
-                    else
-                    {
-                        columnSql.Append(", " + key);                        
-                    }
-                }
-
-                return string.Format("select count(*) from ( select {0} from ( {1} ) groupTable group by {2} ) countTable", columnSql.ToString(), selectSql, columnSql);
-
+                return string.Format("select count(*) from ( select {0} from ( {1} ) groupTable group by {2} ) countTable", columnSql, selectSqlUnordered, columnSql);
             }
         }
 
