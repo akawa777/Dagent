@@ -5,6 +5,7 @@ using System.Text;
 using System.Data.SqlClient;
 using System.Data;
 using System.Data.Common;
+using Dagent.Kernels;
 
 namespace Dagent
 {
@@ -26,5 +27,12 @@ namespace Dagent
         IConnectionScope ConnectionScope();
         ITransactionScope TransactionScope();
         ITransactionScope TransactionScope(IsolationLevel isolationLevel);
+
+        IConfig Config { get; }
+    }
+
+    public interface IConfig
+    {
+        int CommandTimeout { get; set; }
     }
 }

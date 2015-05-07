@@ -10,9 +10,15 @@ namespace Dagent.Kernels
 {
     internal abstract class DagentKernel : IDagentKernel
     {
-        public DagentKernel()
+        public DagentKernel(DbProviderFactory providerFactory, DbConnection connection)
         {
+            ProviderFactory = providerFactory;
+            Connection = connection;
+
             SetTypeMap();
+
+            DbCommand command = ProviderFactory.CreateCommand();
+            CommandTimeout = command.CommandTimeout;
         }
 
         public virtual DbProviderFactory ProviderFactory { get; set; }
@@ -252,6 +258,7 @@ namespace Dagent.Kernels
             command.Connection = Connection;
 
             command.CommandText = sql;
+            command.CommandTimeout = CommandTimeout;
 
             for (int i = 0; i < parameters.Length; i++)
             {
@@ -266,5 +273,12 @@ namespace Dagent.Kernels
 
 
         public DbTransaction Transaction { get; set; }
+
+
+        public int CommandTimeout
+        {
+            get;
+            set;
+        }
     }
 }

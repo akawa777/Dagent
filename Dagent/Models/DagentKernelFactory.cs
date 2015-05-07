@@ -51,15 +51,15 @@ namespace Dagent.Models
 
             if (providerFactoryName == "System.Data.SqlClient.SqlClientFactory")
             {                 
-                return new SqlDagentKernel { ProviderFactory = providerFactory, Connection = connection };
+                return new SqlDagentKernel(providerFactory, connection);
             }
             else if (providerFactoryName == "System.Data.SQLite.SQLiteFactory")
             {
-                return new SqlDagentKernel { ProviderFactory = providerFactory, Connection = connection };
+                return new SqlDagentKernel(providerFactory, connection);
             }
             else if (providerFactoryName == "MySql.Data.MySqlClient.MySqlClientFactory")
             {
-                return new MySqlDagentKernel { ProviderFactory = providerFactory, Connection = connection };
+                return new MySqlDagentKernel(providerFactory, connection);
             }
 
             return null;

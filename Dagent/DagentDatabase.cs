@@ -17,28 +17,34 @@ namespace Dagent
     {
         public DagentDatabase()
         {            
-            dagentKernel = dagentKernelFactory.CreateKernel();            
+            dagentKernel = dagentKernelFactory.CreateKernel();
+            _config = new Config(dagentKernel);
         }
 
         public DagentDatabase(string connectionStringName)
         {
-            dagentKernel = dagentKernelFactory.CreateKernel(connectionStringName);            
+            dagentKernel = dagentKernelFactory.CreateKernel(connectionStringName);
+            _config = new Config(dagentKernel);
         }
 
         public DagentDatabase(string connectionString, string providerName)
         {         
-            dagentKernel = dagentKernelFactory.CreateKernel(connectionString, providerName);        
+            dagentKernel = dagentKernelFactory.CreateKernel(connectionString, providerName);
+            _config = new Config(dagentKernel);
         }
 
         public DagentDatabase(string connectionStringName, string connectionString, string providerName)
         {
-            dagentKernel = dagentKernelFactory.CreateKernel(connectionStringName, connectionString, providerName);            
+            dagentKernel = dagentKernelFactory.CreateKernel(connectionStringName, connectionString, providerName);
+            _config = new Config(dagentKernel);
         }
 
         private IDagentKernel dagentKernel;
         private DagentKernelFactory dagentKernelFactory = new DagentKernelFactory();
 
         private ColumnNamePropertyMap columnNamePropertyMap = new ColumnNamePropertyMap();
+
+        private IConfig _config;        
 
         public virtual DbConnection Connection 
         {
@@ -56,7 +62,7 @@ namespace Dagent
         {
             using (ConnectionScope connectionScope = new ConnectionScope(this.dagentKernel))
             {
-                DbCommand command = dagentKernel.CreateDbCommand(sql, ParameterConverter.GetKeyValuePairs(parameters));
+                DbCommand command = dagentKernel.CreateDbCommand(sql, ParameterConverter.GetKeyValuePairs(parameters));     
                 command.Transaction = this.dagentKernel.Transaction;
                 return command.ExecuteNonQuery();
             }
@@ -163,6 +169,36 @@ namespace Dagent
         public ITransactionScope TransactionScope(IsolationLevel isolationLevel)
         {
             return new TransactionScope(this.dagentKernel, isolationLevel);
+        }
+
+        public IConfig Config
+        {
+            get
+            {
+                return _config;
+            }
+        }
+    }
+
+    internal class Config : IConfig
+    {
+        public Config(IDagentKernel kernel)
+        {
+            _kernel = kernel;
+        }
+
+        private IDagentKernel _kernel;
+
+        public int CommandTimeout
+        {
+            get
+            {
+                return _kernel.CommandTimeout;
+            }
+            set
+            {
+                _kernel.CommandTimeout = value;
+            }
         }
     }
 }

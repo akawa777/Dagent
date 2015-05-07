@@ -8,7 +8,7 @@ using System.Collections.Specialized;
 
 namespace Dagent.Kernels
 {
-    public interface IDagentKernel
+    internal interface IDagentKernel
     {
         DbProviderFactory ProviderFactory { get; set; }
         DbConnection Connection { get; set; }
@@ -23,5 +23,7 @@ namespace Dagent.Kernels
         DbParameter CreateDbParameter(string name, object value);
         DbCommand CreateDbCommand(string sql, KeyValuePair<string, object>[] parameters);
         DbType? GetDbType(Type type);
+
+        int CommandTimeout { get; set; }
     }
 }

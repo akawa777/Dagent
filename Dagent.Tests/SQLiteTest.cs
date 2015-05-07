@@ -173,6 +173,8 @@ namespace Dagent.Tests
         {
             IDagentDatabase database = new DagentDatabase("SQLite");
 
+            database.Config.CommandTimeout = 60;
+
             var customers = database.Query<Customer>(@"
                 select 
                     *
