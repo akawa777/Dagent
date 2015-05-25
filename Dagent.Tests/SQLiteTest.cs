@@ -64,7 +64,11 @@ namespace Dagent.Tests
 
             Assert.AreEqual(9000, customers.Count);
 
-            int maxId = database.Query<Customer>("select max(customerId) from customers").Scalar<int>();
+            int maxId = database.Query("select max(customerId) from customers").Parameters(new { customerId = 1000 }).Scalar<int>();
+            Assert.AreEqual(10000, maxId);
+
+            int count = database.Query("select customerId from customers").Unique("customerId").Count();
+            Assert.AreEqual(10000, count);
 
             customer = new Customer { customerId = maxId + 1, name = "getStarted" };
 
@@ -80,6 +84,16 @@ namespace Dagent.Tests
 
             Assert.AreEqual(1, rtn);
         }
+
+        [TestMethod]
+        public void ConnectionString()
+        {
+            IDagentDatabase database = new DagentDatabase(@"Data Source=..\..\pupsqlite_ver_1201000\dbs\dagentTest.db;Version=3;", "System.Data.SQLite");
+
+            Assert.AreEqual("SQLiteConnection", database.Connection.GetType().Name);
+            
+        }
+
 
         [TestMethod]
         public void FetchEach()

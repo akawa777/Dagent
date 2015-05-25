@@ -33,12 +33,6 @@ namespace Dagent
             _config = new Config(dagentKernel);
         }
 
-        public DagentDatabase(string connectionStringName, string connectionString, string providerName)
-        {
-            dagentKernel = dagentKernelFactory.CreateKernel(connectionStringName, connectionString, providerName);
-            _config = new Config(dagentKernel);
-        }
-
         private IDagentKernel dagentKernel;
         private DagentKernelFactory dagentKernelFactory = new DagentKernelFactory();
 
@@ -97,7 +91,7 @@ namespace Dagent
             using (ConnectionScope connectionScope = new ConnectionScope(this.dagentKernel))
             {
                 DbCommand command = dagentKernel.CreateDbCommand(selectSql, ParameterConverter.GetKeyValuePairs(parameters));
-                command.Transaction = this.dagentKernel.Transaction;
+                command.Transaction = this.dagentKernel.Transaction;                
 
                 DbDataAdapter dataAdapter = dagentKernel.ProviderFactory.CreateDataAdapter();
                 dataAdapter.SelectCommand = command;
@@ -117,6 +111,17 @@ namespace Dagent
                 command.Transaction = this.dagentKernel.Transaction;
 
                 return command.ExecuteReader();
+            }
+        }
+
+        public virtual DbDataReader ExecuteReader(CommandBehavior commandBehavior, string selectSql, params Parameter[] parameters)
+        {
+            using (ConnectionScope connectionScope = new ConnectionScope(this.dagentKernel))
+            {
+                DbCommand command = dagentKernel.CreateDbCommand(selectSql, ParameterConverter.GetKeyValuePairs(parameters));
+                command.Transaction = this.dagentKernel.Transaction;
+
+                return command.ExecuteReader(commandBehavior);
             }
         }
 
@@ -177,6 +182,16 @@ namespace Dagent
             {
                 return _config;
             }
+        }
+
+        public IQuery Query(string tableNameOrSelectSql, params Parameter[] parameters)
+        {
+            return Query<object>(tableNameOrSelectSql, parameters) as IQuery;
+        }
+
+        public IQuery Query(string tableNameOrSelectSql, object parameters)
+        {
+            return Query<object>(tableNameOrSelectSql, parameters) as IQuery;
         }
     }
 

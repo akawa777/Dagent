@@ -16,7 +16,7 @@ using Dagent.Rows;
 
 namespace Dagent.Models
 {
-    internal class Query<T> : IQuery<T> where T : class, new()
+    internal class Query<T> : IQuery, IQuery<T> where T : class, new()
     {
         public Query(IDagentKernel dagentKernel, string selectSql, Parameter[] parameters)
         {
@@ -34,32 +34,7 @@ namespace Dagent.Models
         private string prefixColumnName { get; set; }
         private bool autoMapping = true;
         private Action<T, ICurrentRow> mapAction = (model, row) => { };
-        private bool ignoreCase = false;
-
-        public virtual int Count()
-        {
-            using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel))
-            {
-                DbCommand command = dagentKernel.CreateDbCommand(dagentKernel.GetSelectCountSql(selectSql, this.uniqueColumnNames), ParameterConverter.GetKeyValuePairs(this.parameters));
-                command.Transaction = dagentKernel.Transaction;
-
-                foreach (Parameter parameter in this.parameters)
-                {
-                    command.Parameters.Add(dagentKernel.CreateDbParameter(parameter.Name, parameter.Value));
-                }
-
-                object countValue = command.ExecuteScalar();                
-
-                if (countValue == null)
-                {
-                    return 0;
-                }
-                else
-                {
-                    return int.Parse(countValue.ToString());
-                }
-            }
-        }
+        private bool ignoreCase = false;        
 
         public virtual List<T> Page(int pageNo, int noPerPage, out int count)
         {
@@ -188,17 +163,6 @@ namespace Dagent.Models
             return model;
         }
 
-        public virtual V Scalar<V>()
-        {
-            using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel))
-            {
-                DbCommand command = dagentKernel.CreateDbCommand(selectSql, ParameterConverter.GetKeyValuePairs(parameters));
-                command.Transaction = dagentKernel.Transaction;
-
-                return (V)Convert.ChangeType(command.ExecuteScalar(), typeof(V));
-            }
-        }
-
         public virtual IQuery<T> Unique(params string[] columnNames)
         {
             this.uniqueColumnNames = columnNames;
@@ -248,6 +212,7 @@ namespace Dagent.Models
             {
                 this.mapAction = mapAction;
             }
+
             return this;
         }
 
@@ -264,6 +229,85 @@ namespace Dagent.Models
         public IQuery<T> IgnoreCase(bool ignore)
         {
             ignoreCase = ignore;
+
+            return this;
+        }
+
+        public virtual int Count()
+        {
+            using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel))
+            {
+                DbCommand command = dagentKernel.CreateDbCommand(dagentKernel.GetSelectCountSql(selectSql, this.uniqueColumnNames), ParameterConverter.GetKeyValuePairs(this.parameters));
+                command.Transaction = dagentKernel.Transaction;
+
+                foreach (Parameter parameter in this.parameters)
+                {
+                    command.Parameters.Add(dagentKernel.CreateDbParameter(parameter.Name, parameter.Value));
+                }
+
+                object countValue = command.ExecuteScalar();
+
+                if (countValue == null)
+                {
+                    return 0;
+                }
+                else
+                {
+                    return int.Parse(countValue.ToString());
+                }
+            }
+        }
+
+        public V Scalar<V>()
+        {
+            using (ConnectionScope connectionScope = new ConnectionScope(this.dagentKernel))
+            {
+                DbCommand command = dagentKernel.CreateDbCommand(selectSql, ParameterConverter.GetKeyValuePairs(parameters));
+                command.Transaction = this.dagentKernel.Transaction;
+
+                object val = command.ExecuteScalar();
+
+                if (val == null)
+                {
+                    return default(V);
+                }
+
+                return (V)Convert.ChangeType(command.ExecuteScalar(), typeof(V));
+            }
+        }
+
+        IQuery IQuery.Unique(params string[] columnNames)
+        {
+            this.uniqueColumnNames = columnNames;
+            return this;
+        }
+
+        IQuery IQuery.Parameters(params Parameter[] parameters)
+        {
+            if (parameters == null)
+            {
+                this.parameters = new Parameter[0];
+            }
+            else
+            {
+                this.parameters = parameters;
+            }
+
+            return this;
+        }
+
+        IQuery IQuery.Parameters(object parameters)
+        {
+            Parameter[] parameterItems = ParameterConverter.GetParameters(parameters);
+
+            if (parameterItems == null)
+            {
+                this.parameters = new Parameter[0];
+            }
+            else
+            {
+                this.parameters = parameterItems;
+            }
 
             return this;
         }

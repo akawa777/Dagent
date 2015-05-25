@@ -16,14 +16,14 @@ namespace Dagent.Models
         {
             ConnectionStringSettings connectionStringSettings = ConfigurationManager.ConnectionStrings[0];
 
-            return CreateKernel(connectionStringSettings);
+            return CreateKernel(connectionStringSettings.Name, connectionStringSettings.ConnectionString, connectionStringSettings.ProviderName);
         }
 
         public virtual IDagentKernel CreateKernel(string connectionStringName)
         {
             ConnectionStringSettings connectionStringSettings = ConfigurationManager.ConnectionStrings[connectionStringName];
 
-            return CreateKernel(connectionStringSettings);
+            return CreateKernel(connectionStringSettings.Name, connectionStringSettings.ConnectionString, connectionStringSettings.ProviderName);
         }
 
         public virtual IDagentKernel CreateKernel(string connectionString, string providerName)
@@ -31,19 +31,12 @@ namespace Dagent.Models
             return CreateKernel(string.Empty, connectionString, providerName);
         }
 
-        public virtual IDagentKernel CreateKernel(string connectionStringName, string connectionString, string providerName)
+        protected virtual IDagentKernel CreateKernel(string connectionStringName, string connectionString, string providerName)
         {
-            ConnectionStringSettings connectionStringSettings = new ConnectionStringSettings(connectionStringName, connectionString, providerName);
-
-            return CreateKernel(connectionStringSettings);
-        }
-
-        protected virtual IDagentKernel CreateKernel(ConnectionStringSettings connectionStringSettings)
-        {   
-            DbProviderFactory providerFactory =  DbProviderFactories.GetFactory(connectionStringSettings.ProviderName);
+            DbProviderFactory providerFactory = DbProviderFactories.GetFactory(providerName);
 
             DbConnection connection = providerFactory.CreateConnection();
-            connection.ConnectionString = connectionStringSettings.ConnectionString;
+            connection.ConnectionString = connectionString;
 
             Type providerFactoryType = providerFactory.GetType();
 
