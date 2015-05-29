@@ -105,24 +105,15 @@ namespace Dagent
 
         public virtual DbDataReader ExecuteReader(string selectSql, params Parameter[] parameters)
         {
-            using (ConnectionScope connectionScope = new ConnectionScope(this.dagentKernel))
-            {
-                DbCommand command = dagentKernel.CreateDbCommand(selectSql, ParameterConverter.GetKeyValuePairs(parameters));
-                command.Transaction = this.dagentKernel.Transaction;
-
-                return command.ExecuteReader();
-            }
+            return ExecuteReader(CommandBehavior.Default, selectSql, parameters);
         }
 
         public virtual DbDataReader ExecuteReader(CommandBehavior commandBehavior, string selectSql, params Parameter[] parameters)
         {
-            using (ConnectionScope connectionScope = new ConnectionScope(this.dagentKernel))
-            {
-                DbCommand command = dagentKernel.CreateDbCommand(selectSql, ParameterConverter.GetKeyValuePairs(parameters));
-                command.Transaction = this.dagentKernel.Transaction;
+            DbCommand command = dagentKernel.CreateDbCommand(selectSql, ParameterConverter.GetKeyValuePairs(parameters));
+            command.Transaction = this.dagentKernel.Transaction;
 
-                return command.ExecuteReader(commandBehavior);
-            }
+            return command.ExecuteReader(commandBehavior);
         }
 
         public virtual IQuery<T> Query<T>(string tableNameOrSelectSql) where T : class, new()
@@ -192,28 +183,6 @@ namespace Dagent
         public IQuery Query(string tableNameOrSelectSql, object parameters)
         {
             return Query<object>(tableNameOrSelectSql, parameters) as IQuery;
-        }
-    }
-
-    internal class Config : IConfig
-    {
-        public Config(IDagentKernel kernel)
-        {
-            _kernel = kernel;
-        }
-
-        private IDagentKernel _kernel;
-
-        public int CommandTimeout
-        {
-            get
-            {
-                return _kernel.CommandTimeout;
-            }
-            set
-            {
-                _kernel.CommandTimeout = value;
-            }
         }
     }
 }

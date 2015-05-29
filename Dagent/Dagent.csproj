@@ -45,6 +45,7 @@
   <ItemGroup>
     <Compile Include="Exceptions\ExceptionMessges.cs" />
     <Compile Include="IConnectionScope.cs" />
+    <Compile Include="Config.cs" />
     <Compile Include="ITransactionScope.cs" />
     <Compile Include="ConnectionScope.cs" />
     <Compile Include="ITextBuilder.cs" />

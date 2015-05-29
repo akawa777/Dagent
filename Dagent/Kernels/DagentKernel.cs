@@ -113,8 +113,8 @@ namespace Dagent.Kernels
 
                 for (int i = 0; i < whereParameters.Length; i++)
                 {
-                    if (i == 0) sql.Append(whereParameters[i] + " = @" + whereParameters[i] + " ");
-                    else sql.Append("and " + whereParameters[i] + " = @" + whereParameters[i]);
+                    if (i == 0) sql.Append(whereParameters[i] + " = @" + whereParameters[i]);
+                    else sql.Append(" and " + whereParameters[i] + " = @" + whereParameters[i]);
                 }
             }
 
@@ -193,7 +193,7 @@ namespace Dagent.Kernels
                     }
                     else
                     {
-                        where.Append("and " + whereParameters[i] + " = @" + whereParameters[i]);
+                        where.Append(" and " + whereParameters[i] + " = @" + whereParameters[i]);
                     }
                 }
             }
@@ -217,7 +217,7 @@ namespace Dagent.Kernels
                     }
                     else
                     {
-                        where.Append("and " + whereParameters[i] + " = @" + whereParameters[i]);
+                        where.Append(" and " + whereParameters[i] + " = @" + whereParameters[i]);
                     }
                 }
             }

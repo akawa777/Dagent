@@ -35,9 +35,4 @@ namespace Dagent
 
         IConfig Config { get; }
     }
-
-    public interface IConfig
-    {
-        int CommandTimeout { get; set; }
-    }
 }
