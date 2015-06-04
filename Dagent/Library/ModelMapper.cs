@@ -121,6 +121,11 @@ namespace Dagent.Library
                 return false;
             }
 
+            if (conversionType.IsClass && conversionType != typeof(string))
+            {
+                return false;
+            }
+
             return true;
         }
     }   
