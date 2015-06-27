@@ -98,7 +98,21 @@ namespace Dagent.Tests
         [TestMethod]
         public void FetchEach()
         {
-            IDagentDatabase database = new DagentDatabase("SQLite");            
+            IDagentDatabase database = new DagentDatabase("SQLite");
+
+            database.Query(@"
+                    select 
+                        *
+                    from 
+                        customers c 
+                    inner join 
+                        customerPurchases cp 
+                    on 
+                        c.customerId = cp.customerId                 
+                    order by 
+                        c.customerId, cp.no")
+                .Each(row => { })
+                .Execute();
 
             List<Customer> customers = database.Query<Customer>(@"
                         select 

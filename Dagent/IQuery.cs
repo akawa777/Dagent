@@ -14,7 +14,7 @@ namespace Dagent
     {
         T Single();
         List<T> List();        
-        List<T> Page(int pageNo, int noPerPage, out int count);        
+        List<T> Page(int pageNo, int noPerPage, out int count);       
 
         IQuery<T> Unique(params string[] columnNames);
         IQuery<T> Prefix(string prefixColumnName);
@@ -30,8 +30,10 @@ namespace Dagent
     public interface IQuery
     {   
         int Count();
-        V Scalar<V>();        
+        V Scalar<V>();
+        void Execute();
 
+        IQuery Each(Action<ICurrentRow> mapAction);
         IQuery Unique(params string[] columnNames);        
         IQuery Parameters(params Parameter[] parameters);
         IQuery Parameters(object parameters);        

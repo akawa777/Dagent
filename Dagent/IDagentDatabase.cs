@@ -25,7 +25,7 @@ namespace Dagent
         IQuery<T> Query<T>(string tableNameOrSelectSql, object parameters) where T : class, new();
 
         IQuery Query(string tableNameOrSelectSql, params Parameter[] parameters);
-        IQuery Query(string tableNameOrSelectSql, object parameters);
+        IQuery Query(string tableNameOrSelectSql, object parameters);        
 
         ICommand<T> Command<T>(string tableName, params string[] primaryKeys) where T : class, new();
 

@@ -311,5 +311,19 @@ namespace Dagent.Models
 
             return this;
         }
+
+
+        void IQuery.Execute()
+        {
+            List();
+        }
+
+        public IQuery Each(Action<ICurrentRow> mapAction)
+        {
+            Action<T, ICurrentRow> action = (obj, row) => mapAction(row);
+            Each(action);
+
+            return this;
+        }
     }
 }
