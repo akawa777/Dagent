@@ -10,8 +10,20 @@ using Dagent.Models;
 
 namespace Dagent.Tests3
 {
+    public class TestService
+    {
+
+    }
+
     public class Entity1
     {
+        public Entity1(TestService testService)
+        {
+            _testService = testService;
+        }
+
+        private TestService _testService;
+
         public int Entity1Id { get; set; }
 
         public int? SubEntity1Id { get; set; }
@@ -22,6 +34,13 @@ namespace Dagent.Tests3
 
     public class Entity2
     {
+        public Entity2(TestService testService)
+        {
+            _testService = testService;
+        }
+
+        private TestService _testService;
+
         public int Entity1Id { get; set; }
         public int Entity2Id { get; set; }
 
@@ -33,6 +52,13 @@ namespace Dagent.Tests3
 
     public class Entity3
     {
+        public Entity3(TestService testService)
+        {
+            _testService = testService;
+        }
+
+        private TestService _testService;
+
         public int Entity1Id { get; set; }
         public int Entity2Id { get; set; }
         public int Entity3Id { get; set; }
@@ -79,7 +105,7 @@ namespace Dagent.Tests3
 
                 for (int i = 1; i <= iMax; i++)
                 {
-                    Entity1 e1 = new Entity1();
+                    Entity1 e1 = new Entity1(new TestService());
                     e1.Entity1Id = i;
 
                     if (i % 2 == 0) e1.SubEntity1Id = null;
@@ -89,7 +115,7 @@ namespace Dagent.Tests3
                     {
                         for (int ii = 1; ii <= iiMax; ii++)
                         {
-                            Entity2 e2 = new Entity2();
+                            Entity2 e2 = new Entity2(new TestService());
                             e2.Entity1Id = i;
                             e2.Entity2Id = ii;
 
@@ -100,7 +126,7 @@ namespace Dagent.Tests3
                             {
                                 for (int iii = 1; iii <= iiiMax; iii++)
                                 {
-                                    Entity3 e3 = new Entity3();
+                                    Entity3 e3 = new Entity3(new TestService());
                                     e3.Entity1Id = i;
                                     e3.Entity2Id = ii;
                                     e3.Entity3Id = iii;
@@ -161,18 +187,21 @@ namespace Dagent.Tests3
                     SubEntity3
                 on
                     Entity3.SubEntity3Id = SubEntity3.SubEntity3Id ")
+                .Create(() => new Entity1(new TestService()))
                 .Unique("Entity1Id")
                 .Each((e1, row) =>
                 {
                     row.Map(e1, x => x.SubEntity1, "SubEntity1Id").Do();
 
                     row.Map(e1, x => x.Entity2s, "Entity2Id")
+                        .Create(() => new Entity2(new TestService()))
                         .Unique("Entity1Id", "Entity2Id")
                         .Each(e2 =>
                         {
                             row.Map(e2, x => x.SubEntity2, "SubEntity2Id").Do();
 
                             row.Map(e2, x => x.Entity3s, "Entity3Id")
+                                .Create(() => new Entity3(new TestService()))
                                 .Unique("Entity1Id", "Entity2Id", "Entity3Id")
                                 .Each(e3 => 
                                 {

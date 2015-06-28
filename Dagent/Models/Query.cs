@@ -16,7 +16,7 @@ using Dagent.Rows;
 
 namespace Dagent.Models
 {
-    internal class Query<T> : IQuery, IQuery<T> where T : class, new()
+    internal class Query<T> : IQuery, IQuery<T> where T : class
     {
         public Query(IDagentKernel dagentKernel, string selectSql, Parameter[] parameters)
         {
@@ -34,7 +34,15 @@ namespace Dagent.Models
         private string prefixColumnName { get; set; }
         private bool autoMapping = true;
         private Action<T, ICurrentRow> mapAction = (model, row) => { };
-        private bool ignoreCase = false;        
+        private bool ignoreCase = false;
+        private Func<T> create = () => Activator.CreateInstance<T>();
+
+        public IQuery<T> Create(Func<T> create)
+        {
+            this.create = create;
+
+            return this;
+        }
 
         public virtual List<T> Page(int pageNo, int noPerPage, out int count)
         {
@@ -87,7 +95,7 @@ namespace Dagent.Models
                     {
                         if (firstRow)
                         {
-                            model = new T();
+                            model = create();
                             currentRow = new CurrentRow(reader);                            
                             firstRow = false;                            
                         }
@@ -128,7 +136,7 @@ namespace Dagent.Models
 
                         if (requestNewModel)
                         {
-                            model = new T();
+                            model = create();
 
                             if (autoMapping)
                             {

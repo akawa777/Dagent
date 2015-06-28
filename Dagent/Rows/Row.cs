@@ -174,15 +174,15 @@ namespace Dagent.Rows
         }
 
         public IRowPropertyMapper<T, P> Map<T, P>(T model, Expression<Func<T, P>> targetPropertyExpression, params string[] validColumnNames)
-            where T : class, new()
-            where P : class, new()
+            where T : class
+            where P : class
         {
             return new RowPropertyMapper<T, P>(model, this, targetPropertyExpression, validColumnNames);
         }
 
         public IRowPropertyMapper<T, P> Map<T, P>(T model, Expression<Func<T, List<P>>> targetListPropertyExpression, params string[] validColumnNames)
-            where T : class, new()
-            where P : class, new()
+            where T : class
+            where P : class
         {
             return new RowPropertyMapper<T, P>(model, this, targetListPropertyExpression, validColumnNames);
         }        

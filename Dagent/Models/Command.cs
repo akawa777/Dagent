@@ -16,7 +16,7 @@ using Dagent.Exceptions;
 namespace Dagent.Models
 {
     internal class Command<T> : ICommand<T>
-        where T : class, new()
+        where T : class
     {
         public Command(IDagentKernel dagentKernel, string tableName, string[] primaryKeys)
         {

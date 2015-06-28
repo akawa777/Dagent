@@ -42,7 +42,7 @@ namespace Dagent.Tests
         public int customerId { get; set; }
         public int no { get; set; }
         public string content { get; set; }
-    }
+    }    
 
     [TestClass]
     public class SQLiteTest
@@ -83,6 +83,11 @@ namespace Dagent.Tests
             rtn = database.Command<Customer>("customers", "customerId").Delete(customer);
 
             Assert.AreEqual(1, rtn);
+
+            count = 0;
+            database.Query("customers").Each(row => count++).Execute();
+
+            Assert.AreEqual(10000, count);
         }
 
         [TestMethod]
@@ -91,7 +96,6 @@ namespace Dagent.Tests
             IDagentDatabase database = new DagentDatabase(@"Data Source=..\..\pupsqlite_ver_1201000\dbs\dagentTest.db;Version=3;", "System.Data.SQLite");
 
             Assert.AreEqual("SQLiteConnection", database.Connection.GetType().Name);
-            
         }
 
 
@@ -215,7 +219,7 @@ namespace Dagent.Tests
 	            order by 
                     c.customerId, cp.no")
                 .Unique("customerId")
-                .Each((model, row) => row.Map(model, x => x.CustomerPurchases).Do())                
+                .Each((model, row) => row.Map(model, x => x.CustomerPurchases).Do())                   
                 .List();
 
             ValidList(customers);

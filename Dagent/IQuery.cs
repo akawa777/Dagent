@@ -10,12 +10,13 @@ using Dagent.Rows;
 
 namespace Dagent
 {
-    public interface IQuery<T> where T : class, new()
+    public interface IQuery<T> where T : class
     {
         T Single();
         List<T> List();        
-        List<T> Page(int pageNo, int noPerPage, out int count);       
+        List<T> Page(int pageNo, int noPerPage, out int count);
 
+        IQuery<T> Create(Func<T> create);
         IQuery<T> Unique(params string[] columnNames);
         IQuery<T> Prefix(string prefixColumnName);
         IQuery<T> Parameters(params Parameter[] parameters);                

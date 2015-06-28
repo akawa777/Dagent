@@ -14,16 +14,19 @@ namespace Dagent.Rows
     public interface IRowPropertyMapper
     {
         IRowPropertyMapper<T, P> Map<T, P>(T model, Expression<Func<T, P>> targetPropertyExpression, params string[] validColumnNames) 
-            where T : class, new() 
-            where P : class, new();
+            where T : class
+            where P : class;
 
         IRowPropertyMapper<T, P> Map<T, P>(T model, Expression<Func<T, List<P>>> targetListPropertyExpression, params string[] validColumnNames)
-            where T : class, new()
-            where P : class, new();
+            where T : class
+            where P : class;
     }
 
-    public interface IRowPropertyMapper<T, P> where T : class, new() where P : class, new()
+    public interface IRowPropertyMapper<T, P> 
+        where T : class 
+        where P : class
     {
+        IRowPropertyMapper<T, P> Create(Func<P> create);
         IRowPropertyMapper<T, P> Unique(params string[] uniqueColumnNames);
         IRowPropertyMapper<T, P> Each(Action<P> mapAction);
         IRowPropertyMapper<T, P> Prefix(string prefixColumnName);

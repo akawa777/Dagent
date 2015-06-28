@@ -13,8 +13,8 @@ using Dagent.Exceptions;
 namespace Dagent.Rows
 {
     internal class RowPropertyMapper<T, P> : IRowPropertyMapper<T, P>
-        where T : class, new()
-        where P : class, new()
+        where T : class
+        where P : class
     {
         public RowPropertyMapper(T model, Row row, Expression<Func<T, P>> targetPropertyExpression, string[] validColumnNames)
         {
@@ -46,6 +46,7 @@ namespace Dagent.Rows
         private bool autoMapping = true;
         private Action<P> mapAction;
         private bool ignoreCase = false;
+        private Func<P> create = () => Activator.CreateInstance<P>();
 
         private ColumnNamePropertyMap columnNamePropertyMap;
 
@@ -60,7 +61,7 @@ namespace Dagent.Rows
                     return;
                 }
 
-                P value = new P();
+                P value = create();
 
                 bool success = true;
 
@@ -111,7 +112,7 @@ namespace Dagent.Rows
                 }
                 else
                 {
-                    value = new P();
+                    value = create();
 
                     bool success = true;
 
@@ -177,6 +178,13 @@ namespace Dagent.Rows
         public IRowPropertyMapper<T, P> IgnoreCase(bool ignore)
         {
             ignoreCase = ignore;
+
+            return this;
+        }
+
+        public IRowPropertyMapper<T, P> Create(Func<P> create)
+        {
+            this.create = create;
 
             return this;
         }

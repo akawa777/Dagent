@@ -21,13 +21,13 @@ namespace Dagent
         DbDataReader ExecuteReader(string selectSql, params Parameter[] parameters);
         DbDataReader ExecuteReader(CommandBehavior commandBehavior, string selectSql, params Parameter[] parameters);
 
-        IQuery<T> Query<T>(string tableNameOrSelectSql, params Parameter[] parameters) where T : class, new();
-        IQuery<T> Query<T>(string tableNameOrSelectSql, object parameters) where T : class, new();
+        IQuery<T> Query<T>(string tableNameOrSelectSql, params Parameter[] parameters) where T : class;
+        IQuery<T> Query<T>(string tableNameOrSelectSql, object parameters) where T : class;
 
         IQuery Query(string tableNameOrSelectSql, params Parameter[] parameters);
         IQuery Query(string tableNameOrSelectSql, object parameters);        
 
-        ICommand<T> Command<T>(string tableName, params string[] primaryKeys) where T : class, new();
+        ICommand<T> Command<T>(string tableName, params string[] primaryKeys) where T : class;
 
         IConnectionScope ConnectionScope();
         ITransactionScope TransactionScope();

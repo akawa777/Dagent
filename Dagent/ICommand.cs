@@ -7,7 +7,7 @@ using Dagent.Rows;
 
 namespace Dagent
 {
-    public interface ICommand<T> where T : class, new()
+    public interface ICommand<T> where T : class
     {
         int Insert(T entity);
         int Update(T entity);
