@@ -16,7 +16,7 @@ namespace Dagent
         List<T> List();        
         List<T> Page(int pageNo, int noPerPage, out int count);
 
-        IQuery<T> Create(Func<T> create);
+        IQuery<T> Create(Func<ICurrentRow, T> create);
         IQuery<T> Unique(params string[] columnNames);
         IQuery<T> Prefix(string prefixColumnName);
         IQuery<T> Parameters(params Parameter[] parameters);                

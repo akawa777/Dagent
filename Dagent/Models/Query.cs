@@ -35,9 +35,9 @@ namespace Dagent.Models
         private bool autoMapping = true;
         private Action<T, ICurrentRow> mapAction = (model, row) => { };
         private bool ignoreCase = false;
-        private Func<T> create = () => Activator.CreateInstance<T>();
+        private Func<ICurrentRow, T> create = row => Activator.CreateInstance<T>();
 
-        public IQuery<T> Create(Func<T> create)
+        public IQuery<T> Create(Func<ICurrentRow, T> create)
         {
             this.create = create;
 
@@ -94,10 +94,11 @@ namespace Dagent.Models
                     while (reader.Read())
                     {
                         if (firstRow)
-                        {
-                            model = create();
-                            currentRow = new CurrentRow(reader);                            
-                            firstRow = false;                            
+                        {                            
+                            currentRow = new CurrentRow(reader);
+                            model = create(currentRow);
+                            firstRow = false;
+                            
                         }
                         else
                         {
@@ -136,7 +137,7 @@ namespace Dagent.Models
 
                         if (requestNewModel)
                         {
-                            model = create();
+                            model = create(currentRow);
 
                             if (autoMapping)
                             {

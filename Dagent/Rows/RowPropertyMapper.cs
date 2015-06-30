@@ -46,9 +46,16 @@ namespace Dagent.Rows
         private bool autoMapping = true;
         private Action<P> mapAction;
         private bool ignoreCase = false;
+        private ColumnNamePropertyMap columnNamePropertyMap;
+
         private Func<P> create = () => Activator.CreateInstance<P>();
 
-        private ColumnNamePropertyMap columnNamePropertyMap;
+        public IRowPropertyMapper<T, P> Create(Func<P> create)
+        {
+            this.create = create;
+
+            return this;
+        }
 
         public void Do()
         {
@@ -178,13 +185,6 @@ namespace Dagent.Rows
         public IRowPropertyMapper<T, P> IgnoreCase(bool ignore)
         {
             ignoreCase = ignore;
-
-            return this;
-        }
-
-        public IRowPropertyMapper<T, P> Create(Func<P> create)
-        {
-            this.create = create;
 
             return this;
         }
