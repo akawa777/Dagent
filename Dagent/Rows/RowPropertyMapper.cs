@@ -155,7 +155,7 @@ namespace Dagent.Rows
             return this;
         }
 
-        public IRowPropertyMapper<T, P> Auto(bool autoMapping)
+        public IRowPropertyMapper<T, P> AutoMapping(bool autoMapping)
         {
             this.autoMapping = autoMapping;
 

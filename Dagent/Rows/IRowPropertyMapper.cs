@@ -30,7 +30,7 @@ namespace Dagent.Rows
         IRowPropertyMapper<T, P> Unique(params string[] uniqueColumnNames);
         IRowPropertyMapper<T, P> Each(Action<P> mapAction);
         IRowPropertyMapper<T, P> Prefix(string prefixColumnName);
-        IRowPropertyMapper<T, P> Auto(bool autoMapping);
+        IRowPropertyMapper<T, P> AutoMapping(bool autoMapping);
         IRowPropertyMapper<T, P> Ignore(params Expression<Func<P, object>>[] ignoreProperties);
         IRowPropertyMapper<T, P> IgnoreCase(bool ignore);
 

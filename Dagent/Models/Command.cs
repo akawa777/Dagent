@@ -130,7 +130,7 @@ namespace Dagent.Models
             return this;
         }
 
-        public virtual ICommand<T> Auto(bool autoMapping)
+        public virtual ICommand<T> AutoMapping(bool autoMapping)
         {
             this.autoMapping = autoMapping;
             return this;

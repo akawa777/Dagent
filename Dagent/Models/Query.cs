@@ -185,7 +185,7 @@ namespace Dagent.Models
             return this;
         }
 
-        public virtual IQuery<T> Auto(bool autoMapping)
+        public virtual IQuery<T> AutoMapping(bool autoMapping)
         {
             this.autoMapping = autoMapping;
             return this;

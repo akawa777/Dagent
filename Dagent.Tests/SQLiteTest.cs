@@ -382,7 +382,7 @@ namespace Dagent.Tests
                         c.customerId = cp.customerId                 
         	        order by 
                         c.customerId, cp.no")
-                .Auto(false)
+                .AutoMapping(false)
                 .Unique("customerId")
                 .Each((model, row) => {                    
                     model.customerId = row.Get<int>("customerId");
@@ -875,7 +875,7 @@ namespace Dagent.Tests
             Assert.AreEqual(customer.customerId, registerdCustomer.customerId);
             Assert.AreEqual(customer.name, registerdCustomer.name);
 
-            ret = command.Auto(false).Map((row, model) => 
+            ret = command.AutoMapping(false).Map((row, model) => 
             {
                 row["customerId"] = model.customerId;
                 row["name"] = model.name;
