@@ -327,7 +327,7 @@ namespace Dagent.Models
             List();
         }
 
-        public IQuery Each(Action<ICurrentRow> mapAction)
+        public IQuery Each(Action<IBaseRow> mapAction)
         {
             Action<T, ICurrentRow> action = (obj, row) => mapAction(row);
             Each(action);

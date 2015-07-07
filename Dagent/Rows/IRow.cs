@@ -10,7 +10,7 @@ using System.Data.Common;
 
 namespace Dagent.Rows
 {
-    public interface IRow : IBaseRow
+    internal interface IRow : IBaseRow
     {
         int ColumnCount { get; }
 

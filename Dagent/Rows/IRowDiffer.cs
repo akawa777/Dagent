@@ -10,7 +10,7 @@ using System.Data.Common;
 
 namespace Dagent.Rows
 {
-    public interface IRowCompare
+    internal interface IRowCompare
     {
         bool Compare(IRow dagentRow, params string[] columnNames);        
     }

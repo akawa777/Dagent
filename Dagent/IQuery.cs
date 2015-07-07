@@ -34,7 +34,7 @@ namespace Dagent
         V Scalar<V>();
         void Execute();
 
-        IQuery Each(Action<ICurrentRow> mapAction);
+        IQuery Each(Action<IBaseRow> mapAction);
         IQuery Unique(params string[] columnNames);        
         IQuery Parameters(params Parameter[] parameters);
         IQuery Parameters(object parameters);        
