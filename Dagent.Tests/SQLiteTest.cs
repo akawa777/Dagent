@@ -170,11 +170,32 @@ namespace Dagent.Tests
         }
 
         [TestMethod]
+        public void DagentTestForIterator()
+        {
+            IDagentDatabase database = new DagentDatabase("SQLite");
+
+            var customers = database.Query<Customer>("select * from customers").Iterator();
+
+            List<Customer> list = new List<Customer>();
+
+            using (var scope = database.ConnectionScope())
+            {
+                foreach (var customer in customers)
+                {
+                    customer.CustomerPurchases = database.Query<CustomerPurchase>("select * from customerPurchases where customerId = @customerId", new { customerId = customer.customerId }).List();
+                    list.Add(customer);
+                }
+            }
+
+            ValidList(list);
+        }
+
+        [TestMethod]
         public void DapperTest()
         {
             IDagentDatabase database = new DagentDatabase("SQLite");
 
-            var customers = database.Connection.Query<Customer>("select * from customers", null).ToList();
+            var customers = database.Connection.Query<Customer>("select * from customers", null);
 
             foreach (var customer in customers)
             {
@@ -190,6 +211,7 @@ namespace Dagent.Tests
             IDagentDatabase database = new DagentDatabase("SQLite");
             NPoco.IDatabase db = new NPoco.Database(database.Connection);
 
+            //var customers = db.Query<Customer>("select * from customers");
             var customers = db.Fetch<Customer>("select * from customers");
 
             foreach (var customer in customers)

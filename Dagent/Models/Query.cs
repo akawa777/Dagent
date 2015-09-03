@@ -53,6 +53,11 @@ namespace Dagent.Models
             }            
         }
 
+        public virtual IEnumerable<T> Iterator()
+        {
+            return List(0, 0);
+        }
+
         public virtual List<T> List()
         {            
             return List(0, 0).ToList();
