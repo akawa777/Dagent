@@ -50,6 +50,7 @@
     <Compile Include="ConnectionScope.cs" />
     <Compile Include="ITextBuilder.cs" />
     <Compile Include="Library\ColumnNamePropertyMap.cs" />
+    <Compile Include="Models\Iterator.cs" />
     <Compile Include="Rows\IBaseRow.cs" />
     <Compile Include="Rows\ICurrentRow.cs" />
     <Compile Include="Rows\IUpdateRow.cs" />
