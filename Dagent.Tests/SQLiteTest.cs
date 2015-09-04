@@ -174,20 +174,17 @@ namespace Dagent.Tests
         {
             IDagentDatabase database = new DagentDatabase("SQLite");
 
-            var customers = database.Query<Customer>("select * from customers").Iterator();
-
-            List<Customer> list = new List<Customer>();
+            var customers = database.Query<Customer>("select * from customers").EnumerateList();
 
             using (var scope = database.ConnectionScope())
             {
                 foreach (var customer in customers)
                 {
-                    customer.CustomerPurchases = database.Query<CustomerPurchase>("select * from customerPurchases where customerId = @customerId", new { customerId = customer.customerId }).List();
-                    list.Add(customer);
+                    customer.CustomerPurchases = database.Query<CustomerPurchase>("select * from customerPurchases where customerId = @customerId", new { customerId = customer.customerId }).List();                    
                 }
             }
 
-            ValidList(list);
+            ValidList(customers);
         }
 
         [TestMethod]

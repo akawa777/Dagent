@@ -49,26 +49,35 @@ namespace Dagent.Models
             using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel))
             {
                 count = Count();
-                return List((pageNo) * noPerPage, noPerPage).ToList();
+                return Fetch((pageNo) * noPerPage, noPerPage).ToList();
             }            
         }
 
-        public virtual IEnumerable<T> Iterator()
+        public virtual IEnumerable<T> EnumerateList()
         {
-            return List(0, 0);
+            return new Enumerable<T>(Fetch(0, 0));
+        }
+
+        public virtual IEnumerable<T> EnumeratePage(int pageNo, int noPerPage, out int count)
+        {
+            using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel))
+            {
+                count = Count();
+                return new Enumerable<T>(Fetch((pageNo) * noPerPage, noPerPage));
+            }   
         }
 
         public virtual List<T> List()
-        {            
-            return List(0, 0).ToList();
+        {
+            return Fetch(0, 0).ToList();
         }
 
         public virtual T Single()
         {
-            return List(0, 1).FirstOrDefault();
+            return Fetch(0, 1).FirstOrDefault();
         }
         
-        protected virtual IEnumerable<T> List(int sliceIndex, int sliceNo)
+        protected virtual IEnumerable<T> Fetch(int sliceIndex, int sliceNo)
         {
             using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel))
             {
@@ -88,9 +97,9 @@ namespace Dagent.Models
                     CurrentRow prevRow = null;                                        
 
                     bool firstRow = true;
-                    bool canYeld = sliceNo == 0 ? true : false;                    
+                    bool canYeld = sliceNo == 0 ? true : false;
 
-                    List<CurrentRow> currentRows = new List<CurrentRow>();
+                    List<CurrentRow> currentRows = new List<CurrentRow>();                    
 
                     T model = null;
 
@@ -102,8 +111,7 @@ namespace Dagent.Models
                         {                            
                             currentRow = new CurrentRow(reader);
                             model = create(currentRow);
-                            firstRow = false;
-                            
+                            firstRow = false;                            
                         }
                         else
                         {
@@ -117,8 +125,11 @@ namespace Dagent.Models
                             
                             if (canYeld && requestNewModel)
                             {
-                                yield return GetModel(model, currentRows);
-                                currentRows = new List<CurrentRow>();
+                                yield return model;
+
+                                // for iterator
+                                //yield return GetModel(validColumnNames, prefixColumnName, columnNamePropertyMap, ignoreCase, currentRows);
+                                //currentRows = new List<CurrentRow>();
                             }
                         }
 
@@ -138,7 +149,7 @@ namespace Dagent.Models
                             }
                         }
 
-                        currentRows.Add(currentRow);                        
+                        currentRows.Add(currentRow);
 
                         if (requestNewModel)
                         {
@@ -150,6 +161,11 @@ namespace Dagent.Models
                             }
                         }
 
+                        if (mapAction != null)
+                        {
+                            mapAction(model, currentRow);
+                        }
+
                         if (sliceNo != 0 && sliceNo == sliceCount)
                         {
                             break;
@@ -158,20 +174,43 @@ namespace Dagent.Models
 
                     if (model != null)
                     {
-                        yield return GetModel(model, currentRows);
+                        yield return model;
                     }
+
+                    // for iterator
+                    //if (currentRows != null)
+                    //{
+                    //    yield return GetModel(validColumnNames, prefixColumnName, columnNamePropertyMap, ignoreCase, currentRows);
+                    //}
+
                 }
             }
         }
 
-        private T GetModel (T model, List<CurrentRow> currentRows)
+        // for iterator
+        private T GetModel (string[] validColumnNames, string prefixColumnName, ColumnNamePropertyMap columnNamePropertyMap, bool ignoreCase, List<CurrentRow> currentRows)
         {
-            if (mapAction != null)
+            T model = null;
+            bool isFirstRow = true;
+
+            foreach (CurrentRow currentRow in currentRows)
             {
-                foreach (CurrentRow currentRow in currentRows)
+                if (isFirstRow)
                 {
-                    mapAction(model, currentRow);    
-                }   
+                    model = create(currentRow);
+
+                    if (autoMapping)
+                    {
+                        ModelMapper<T>.Map(model, currentRow, validColumnNames, prefixColumnName, columnNamePropertyMap, ignoreCase);
+                    }
+
+                    isFirstRow = false;
+                }
+
+                if (mapAction != null)
+                {
+                    mapAction(model, currentRow);
+                }
             }
 
             return model;

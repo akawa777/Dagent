@@ -132,7 +132,6 @@ namespace Dagent
             
             if (dagentKernel.OnlyTableName(tableNameOrSelectSql))
             {
-
                 selectSql = dagentKernel.GetSelectSql(tableNameOrSelectSql, parameters == null || parameters.Length == 0 ? null : parameters.Select(x => x.Name).ToArray());
             }
             else
