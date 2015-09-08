@@ -16,7 +16,7 @@ namespace Dagent.Kernels
 
         string GetSelectSql(string tableName, string[] whereParameters);
         string GetSelectCountSql(string selectSql, string[] uniqueKeys);
-        string GetInsertSql(string tableName, string[] valueParameters);
+        string GetInsertSql(string tableName, string[] whereParameters, string[] valueParameters);
         string GetUpdateSql(string tableName, string[] whereParameters, string[] valueParameters);
         string GetDeleteSql(string tableName, string[] whereParameters);
         bool OnlyTableName(string selectSql);

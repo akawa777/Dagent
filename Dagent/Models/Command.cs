@@ -31,6 +31,8 @@ namespace Dagent.Models
         private string[] primaryKeys;
         private bool autoMapping = true;
         private Action<IUpdateRow, T> mapAction = (row, model) => { };
+        private string where = string.Empty;
+        private Parameter[] parameters;
 
         protected virtual int Execute(DataRowState rowState, T entity)
         {
@@ -60,13 +62,6 @@ namespace Dagent.Models
 
                 this.mapAction(updateRow, entity);
 
-                List<KeyValuePair<string, object>> primaryKeyParameters = new List<KeyValuePair<string, object>>();
-
-                foreach (string key in this.primaryKeys)
-                {
-                    primaryKeyParameters.Add(new KeyValuePair<string, object>(key, updateRow[key]));
-                }
-
                 List<KeyValuePair<string, object>> valueParameters = new List<KeyValuePair<string, object>>();
 
                 foreach (string columnName in updateRow.ColumnNames)
@@ -79,19 +74,30 @@ namespace Dagent.Models
                     valueParameters.Add(new KeyValuePair<string, object>(columnName, value));
                 }
 
+                if (parameters != null)
+                {
+                    foreach (Parameter parameter in parameters)
+                    {
+                        valueParameters.Add(new KeyValuePair<string, object>(parameter.Name, parameter.Value));
+                    }
+                }
+
                 string sql = "";
 
                 if (rowState == DataRowState.Added)
                 {
-                    sql = dagentKernel.GetInsertSql(tableName, updateRow.ColumnNames);
+                    sql = dagentKernel.GetInsertSql(tableName, this.primaryKeys, updateRow.ColumnNames);
                 }
                 else if (rowState == DataRowState.Modified)
                 {
-                    sql = dagentKernel.GetUpdateSql(tableName, this.primaryKeys, updateRow.ColumnNames);
+                    sql = dagentKernel.GetUpdateSql(tableName, this.primaryKeys, updateRow.ColumnNames) 
+                        + (string.IsNullOrEmpty(this.where) ? string.Empty : string.Format(" and ({0}) ", where));
+                    
                 }
                 else if (rowState == DataRowState.Deleted)
                 {
-                    sql = dagentKernel.GetDeleteSql(tableName, this.primaryKeys);
+                    sql = dagentKernel.GetDeleteSql(tableName, this.primaryKeys)
+                        + (string.IsNullOrEmpty(this.where) ? string.Empty : string.Format(" and ({0}) ", where));
                 }
 
                 DbCommand command = dagentKernel.CreateDbCommand(sql, valueParameters.ToArray());
@@ -141,6 +147,41 @@ namespace Dagent.Models
             foreach (var property in ignoreProperties)
             {
                 this.columnNamePropertyMap.IgnoreProperty<T>(ExpressionParser.GetPropertyInfo<T, object>(property));
+            }
+
+            return this;
+        }
+
+
+        public ICommand<T> Where(string where, params Parameter[] parameters)
+        {
+            this.where = where;
+
+            if (parameters == null)
+            {
+                this.parameters = new Parameter[0];
+            }
+            else
+            {
+                this.parameters = parameters;
+            }
+
+            return this;
+        }
+
+        public ICommand<T> Where(string where, object parameters)
+        {
+            this.where = where;
+
+            Parameter[] parameterItems = ParameterConverter.GetParameters(parameters);
+
+            if (parameterItems == null)
+            {
+                this.parameters = new Parameter[0];
+            }
+            else
+            {
+                this.parameters = parameterItems;
             }
 
             return this;
