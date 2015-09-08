@@ -10,8 +10,7 @@ namespace Dagent
 {   
     public interface ITransactionScope : IConnectionScope
     {
-        void Commit();
-        void Rollback();
+        void Complete();        
         DbTransaction Transaction { get; }
     }
 }

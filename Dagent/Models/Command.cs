@@ -35,75 +35,77 @@ namespace Dagent.Models
         private Parameter[] parameters;
 
         protected virtual int Execute(DataRowState rowState, T entity)
-        {
-            using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel))
+        {   
+            Dictionary<string, object> columnValueMap = new Dictionary<string, object>();
+
+            if (this.autoMapping)
             {
-                Dictionary<string, object> columnValueMap = new Dictionary<string, object>();
-
-                if (this.autoMapping)
-                {
-                    foreach (var property in typeof(T).GetProperties())
-                    {                    
-                        if (!property.CanRead)
-                        {
-                            continue;
-                        }
-
-                        DbType? dbType = dagentKernel.GetDbType(property.PropertyType);
-                        string columnName;
-                        if (dbType.HasValue && columnNamePropertyMap.TryGetColumnName<T>(property, out columnName))
-                        {
-                            columnValueMap[columnName] = DynamicMethodBuilder<T>.CreateGetMethod(property)(entity);
-                        }
-                    }
-                }
-
-                UpdateRow updateRow = new UpdateRow(columnValueMap);
-
-                this.mapAction(updateRow, entity);
-
-                List<KeyValuePair<string, object>> valueParameters = new List<KeyValuePair<string, object>>();
-
-                foreach (string columnName in updateRow.ColumnNames)
-                {
-                    object value = updateRow[columnName];
-                    if (value == null)
+                foreach (var property in typeof(T).GetProperties())
+                {                    
+                    if (!property.CanRead)
                     {
-                        value = DBNull.Value;
+                        continue;
                     }
-                    valueParameters.Add(new KeyValuePair<string, object>(columnName, value));
-                }
 
-                if (parameters != null)
-                {
-                    foreach (Parameter parameter in parameters)
+                    DbType? dbType = dagentKernel.GetDbType(property.PropertyType);
+                    string columnName;
+                    if (dbType.HasValue && columnNamePropertyMap.TryGetColumnName<T>(property, out columnName))
                     {
-                        valueParameters.Add(new KeyValuePair<string, object>(parameter.Name, parameter.Value));
+                        columnValueMap[columnName] = DynamicMethodBuilder<T>.CreateGetMethod(property)(entity);
                     }
                 }
+            }
 
-                string sql = "";
+            UpdateRow updateRow = new UpdateRow(columnValueMap);
 
-                if (rowState == DataRowState.Added)
+            this.mapAction(updateRow, entity);
+
+            List<KeyValuePair<string, object>> valueParameters = new List<KeyValuePair<string, object>>();
+
+            foreach (string columnName in updateRow.ColumnNames)
+            {
+                object value = updateRow[columnName];
+                if (value == null)
                 {
-                    sql = dagentKernel.GetInsertSql(tableName, this.primaryKeys, updateRow.ColumnNames);
+                    value = DBNull.Value;
                 }
-                else if (rowState == DataRowState.Modified)
+                valueParameters.Add(new KeyValuePair<string, object>(columnName, value));
+            }
+
+            if (parameters != null)
+            {
+                foreach (Parameter parameter in parameters)
                 {
-                    sql = dagentKernel.GetUpdateSql(tableName, this.primaryKeys, updateRow.ColumnNames) 
-                        + (string.IsNullOrEmpty(this.where) ? string.Empty : string.Format(" and ({0}) ", where));
+                    valueParameters.Add(new KeyValuePair<string, object>(parameter.Name, parameter.Value));
+                }
+            }
+
+            string sql = "";
+
+            if (rowState == DataRowState.Added)
+            {
+                sql = dagentKernel.GetInsertSql(tableName, this.primaryKeys, updateRow.ColumnNames);
+            }
+            else if (rowState == DataRowState.Modified)
+            {
+                sql = dagentKernel.GetUpdateSql(tableName, this.primaryKeys, updateRow.ColumnNames) 
+                    + (string.IsNullOrEmpty(this.where) ? string.Empty : string.Format(" and ({0}) ", where));
                     
-                }
-                else if (rowState == DataRowState.Deleted)
-                {
-                    sql = dagentKernel.GetDeleteSql(tableName, this.primaryKeys)
-                        + (string.IsNullOrEmpty(this.where) ? string.Empty : string.Format(" and ({0}) ", where));
-                }
+            }
+            else if (rowState == DataRowState.Deleted)
+            {
+                sql = dagentKernel.GetDeleteSql(tableName, this.primaryKeys)
+                    + (string.IsNullOrEmpty(this.where) ? string.Empty : string.Format(" and ({0}) ", where));
+            }
+            
+            using (TransactionScope tarnsactionScope = new TransactionScope(dagentKernel))
+            {
+                DbCommand command = dagentKernel.CreateDbCommand(sql, valueParameters.ToArray());                
+                int rtn = command.ExecuteNonQuery();
 
-                DbCommand command = dagentKernel.CreateDbCommand(sql, valueParameters.ToArray());
-                command.Transaction = dagentKernel.Transaction;
+                tarnsactionScope.Complete();
 
-                return command.ExecuteNonQuery();
+                return rtn;
             }
         }        
 

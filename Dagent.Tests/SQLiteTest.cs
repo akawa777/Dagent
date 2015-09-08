@@ -732,7 +732,7 @@ namespace Dagent.Tests
                         .Insert(business);
                 }
 
-                scope.Commit();
+                scope.Complete();
             }
 
             FetchForOneToOne();
@@ -953,7 +953,7 @@ namespace Dagent.Tests
                     database.ExequteNonQuery(string.Format("insert into business values ({0}, '{1}')", i.ToString(), "business_" + i.ToString()));
                 }
 
-                scope.Commit();
+                scope.Complete();
             }
         }
 
@@ -998,7 +998,7 @@ namespace Dagent.Tests
 
                 Assert.AreEqual(0, rtn1);
 
-                scope.Commit();
+                scope.Complete();
             }
 
             int rtn2 = database.ExequteNonQuery(sql);

@@ -26,47 +26,58 @@ namespace Dagent
         
         protected bool settedIsolationLevel;
         protected IsolationLevel isolationLevel;
+        protected bool isAlreadyBeginTransaction = false;
+        protected bool isEndTransaction = false;
+        protected bool isCommited = false;
 
         protected override void BeginOpen()
         {
             base.BeginOpen();
 
-            if (this.kernel.Connection.State == ConnectionState.Open)
+            if (this.kernel.Transaction == null)
             {
                 if (settedIsolationLevel)
                 {
-                    this.kernel.Transaction = this.kernel.Connection.BeginTransaction(isolationLevel);                    
+                    this.kernel.Transaction = this.kernel.Connection.BeginTransaction(isolationLevel);
                 }
                 else
                 {
                     this.kernel.Transaction = this.kernel.Connection.BeginTransaction();
                 }
             }
+            else
+            {
+                isAlreadyBeginTransaction = true;
+            }
         }
 
-        public virtual void Commit()
+        public virtual void Complete()
         {
-            this.kernel.Transaction.Commit();
-        }
-
-        public virtual void Rollback()
-        {
-            this.kernel.Transaction.Rollback();
+            if (!isAlreadyBeginTransaction)
+            {
+                isCommited = true;                
+            }
         }
 
         protected override void BeginClose()
         {
-            if (this.kernel.Transaction != null && this.kernel.Transaction.Connection != null)
+            if (!isAlreadyBeginTransaction)
             {
-                this.kernel.Transaction.Rollback();
-            }
+                if (isCommited)
+                {
+                    this.kernel.Transaction.Commit();                    
+                }
+                else
+                {
+                    this.kernel.Transaction.Rollback();
+                }
 
-            this.kernel.Transaction.Dispose();
-            this.kernel.Transaction = null;
+                this.kernel.Transaction.Dispose();
+                this.kernel.Transaction = null;
+            }            
 
             base.BeginClose();
         }
-
 
         public DbTransaction Transaction
         {

@@ -152,7 +152,7 @@ namespace Dagent.Tests3
                     db.Command<SubEntity3>("SubEntity3", "SubEntity3Id").Insert(se3);
                 }
 
-                scope.Commit();
+                scope.Complete();
             }
         }
 
