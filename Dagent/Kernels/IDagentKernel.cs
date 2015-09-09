@@ -20,8 +20,8 @@ namespace Dagent.Kernels
         string GetUpdateSql(string tableName, string[] whereParameters, string[] valueParameters);
         string GetDeleteSql(string tableName, string[] whereParameters);
         bool OnlyTableName(string selectSql);
-        DbParameter CreateDbParameter(string name, object value);
-        DbCommand CreateDbCommand(string sql, KeyValuePair<string, object>[] parameters);
+        DbParameter CreateDbParameter(DbParameter parameter);
+        DbCommand CreateDbCommand(string sql);
         DbType? GetDbType(Type type);
 
         int CommandTimeout { get; set; }

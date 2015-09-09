@@ -81,7 +81,10 @@ namespace Dagent.Models
         {
             using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel))
             {
-                DbCommand command = dagentKernel.CreateDbCommand(selectSql, ParameterConverter.GetKeyValuePairs(this.parameters));
+                DbCommand command = dagentKernel.CreateDbCommand(selectSql);
+
+                ParameterConverter.SetParamters(command, parameters, dagentKernel.CreateDbParameter);
+
                 command.Transaction = dagentKernel.Transaction;
 
                 List<T> models = new List<T>();
@@ -290,13 +293,11 @@ namespace Dagent.Models
         {
             using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel))
             {
-                DbCommand command = dagentKernel.CreateDbCommand(dagentKernel.GetSelectCountSql(selectSql, this.uniqueColumnNames), ParameterConverter.GetKeyValuePairs(this.parameters));
-                command.Transaction = dagentKernel.Transaction;
+                DbCommand command = dagentKernel.CreateDbCommand(dagentKernel.GetSelectCountSql(selectSql, this.uniqueColumnNames));
 
-                foreach (Parameter parameter in this.parameters)
-                {
-                    command.Parameters.Add(dagentKernel.CreateDbParameter(parameter.Name, parameter.Value));
-                }
+                ParameterConverter.SetParamters(command, parameters, dagentKernel.CreateDbParameter);
+
+                command.Transaction = dagentKernel.Transaction;
 
                 object countValue = command.ExecuteScalar();
 
@@ -315,7 +316,10 @@ namespace Dagent.Models
         {
             using (ConnectionScope connectionScope = new ConnectionScope(this.dagentKernel))
             {
-                DbCommand command = dagentKernel.CreateDbCommand(selectSql, ParameterConverter.GetKeyValuePairs(parameters));
+                DbCommand command = dagentKernel.CreateDbCommand(selectSql);
+
+                ParameterConverter.SetParamters(command, parameters, dagentKernel.CreateDbParameter);
+
                 command.Transaction = this.dagentKernel.Transaction;
 
                 object val = command.ExecuteScalar();

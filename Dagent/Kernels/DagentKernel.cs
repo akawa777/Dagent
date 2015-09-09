@@ -256,34 +256,27 @@ namespace Dagent.Kernels
             }
         }
 
-        public virtual DbParameter CreateDbParameter(string name, object value)
+        public virtual DbParameter CreateDbParameter(DbParameter parameter)
         {
             DbParameter dbParameter = ProviderFactory.CreateParameter();
-            dbParameter.ParameterName = ParameterPrefix + name;
-            dbParameter.Value = value;
 
-            DbType? dbType = GetDbType(value);
+            dbParameter.ParameterName = ParameterPrefix + parameter.ParameterName;
+            dbParameter.Value = parameter.Value;
+
+            DbType? dbType = GetDbType(parameter.Value);
             if (dbType.HasValue) dbParameter.DbType = dbType.Value;
 
             return dbParameter;
         }
 
 
-        public virtual DbCommand CreateDbCommand(string sql, KeyValuePair<string, object>[] parameters)
+        public virtual DbCommand CreateDbCommand(string sql)
         {
             DbCommand command = ProviderFactory.CreateCommand();
             command.Connection = Connection;
 
             command.CommandText = sql;
-            command.CommandTimeout = CommandTimeout;
-
-            for (int i = 0; i < parameters.Length; i++)
-            {
-                DbParameter parameter = CreateDbParameter(parameters[i].Key, parameters[i].Value);
-                if (parameter == null) continue;
-
-                command.Parameters.Add(parameter);
-            }
+            command.CommandTimeout = CommandTimeout;            
 
             return command;
         }

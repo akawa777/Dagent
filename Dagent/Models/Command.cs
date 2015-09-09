@@ -60,23 +60,25 @@ namespace Dagent.Models
 
             this.mapAction(updateRow, entity);
 
-            List<KeyValuePair<string, object>> valueParameters = new List<KeyValuePair<string, object>>();
+            List<Parameter> valueParameters = new List<Parameter>();
 
             foreach (string columnName in updateRow.ColumnNames)
             {
                 object value = updateRow[columnName];
+
                 if (value == null)
                 {
                     value = DBNull.Value;
                 }
-                valueParameters.Add(new KeyValuePair<string, object>(columnName, value));
+                
+                valueParameters.Add(new Parameter(columnName, value));
             }
 
             if (parameters != null)
             {
                 foreach (Parameter parameter in parameters)
                 {
-                    valueParameters.Add(new KeyValuePair<string, object>(parameter.Name, parameter.Value));
+                    valueParameters.Add(parameter);
                 }
             }
 
@@ -100,7 +102,10 @@ namespace Dagent.Models
             
             using (TransactionScope tarnsactionScope = new TransactionScope(dagentKernel))
             {
-                DbCommand command = dagentKernel.CreateDbCommand(sql, valueParameters.ToArray());                
+                DbCommand command = dagentKernel.CreateDbCommand(sql);
+
+                ParameterConverter.SetParamters(command, valueParameters.ToArray(), dagentKernel.CreateDbParameter);
+
                 int rtn = command.ExecuteNonQuery();
 
                 tarnsactionScope.Complete();
