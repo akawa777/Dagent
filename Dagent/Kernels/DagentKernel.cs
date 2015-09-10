@@ -290,5 +290,8 @@ namespace Dagent.Kernels
             get;
             set;
         }
+
+
+        public bool Rollbakced { get; set; }
     }
 }
