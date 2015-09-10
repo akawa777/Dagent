@@ -49,6 +49,7 @@ namespace Dagent.Kernels
             if (type == null) return null;
 
             DbType dbType;
+
             if (typeMap.TryGetValue(type, out dbType))
             {
                 return dbType;
