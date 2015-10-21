@@ -276,6 +276,8 @@ namespace Dagent.Kernels
             DbCommand command = ProviderFactory.CreateCommand();
             command.Connection = Connection;
 
+            command.Transaction = Transaction == null ? null : Transaction;            
+
             command.CommandText = sql;
             command.CommandTimeout = CommandTimeout;            
 

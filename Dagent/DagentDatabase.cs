@@ -59,8 +59,7 @@ namespace Dagent
                 DbCommand command = dagentKernel.CreateDbCommand(sql);
 
                 ParameterConverter.SetParamters(command, parameters, dagentKernel.CreateDbParameter);
-
-                command.Transaction = this.dagentKernel.Transaction;
+                
                 return command.ExecuteNonQuery();
             }
         }
@@ -72,8 +71,7 @@ namespace Dagent
                 DbCommand command = dagentKernel.CreateDbCommand(sql);
 
                 ParameterConverter.SetParamters(command, parameters, dagentKernel.CreateDbParameter);
-
-                command.Transaction = this.dagentKernel.Transaction;
+                
                 return command.ExecuteScalar();
             }
         }
@@ -84,9 +82,7 @@ namespace Dagent
             {
                 DbCommand command = dagentKernel.CreateDbCommand(selectSql);
 
-                ParameterConverter.SetParamters(command, parameters, dagentKernel.CreateDbParameter);
-
-                command.Transaction = this.dagentKernel.Transaction;
+                ParameterConverter.SetParamters(command, parameters, dagentKernel.CreateDbParameter);                
 
                 DbDataAdapter dataAdapter = dagentKernel.ProviderFactory.CreateDataAdapter();
                 dataAdapter.SelectCommand = command;
@@ -101,9 +97,7 @@ namespace Dagent
             {
                 DbCommand command = dagentKernel.CreateDbCommand(selectSql);
 
-                ParameterConverter.SetParamters(command, parameters, dagentKernel.CreateDbParameter);
-
-                command.Transaction = this.dagentKernel.Transaction;                
+                ParameterConverter.SetParamters(command, parameters, dagentKernel.CreateDbParameter);                
 
                 DbDataAdapter dataAdapter = dagentKernel.ProviderFactory.CreateDataAdapter();
                 dataAdapter.SelectCommand = command;
@@ -124,9 +118,7 @@ namespace Dagent
         {
             DbCommand command = dagentKernel.CreateDbCommand(selectSql);
 
-            ParameterConverter.SetParamters(command, parameters, dagentKernel.CreateDbParameter);
-
-            command.Transaction = this.dagentKernel.Transaction;
+            ParameterConverter.SetParamters(command, parameters, dagentKernel.CreateDbParameter);            
 
             return command.ExecuteReader(commandBehavior);
         }

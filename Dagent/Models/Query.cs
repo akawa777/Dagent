@@ -83,9 +83,7 @@ namespace Dagent.Models
             {
                 DbCommand command = dagentKernel.CreateDbCommand(selectSql);
 
-                ParameterConverter.SetParamters(command, parameters, dagentKernel.CreateDbParameter);
-
-                command.Transaction = dagentKernel.Transaction;
+                ParameterConverter.SetParamters(command, parameters, dagentKernel.CreateDbParameter);                
 
                 List<T> models = new List<T>();
 
@@ -295,9 +293,7 @@ namespace Dagent.Models
             {
                 DbCommand command = dagentKernel.CreateDbCommand(dagentKernel.GetSelectCountSql(selectSql, this.uniqueColumnNames));
 
-                ParameterConverter.SetParamters(command, parameters, dagentKernel.CreateDbParameter);
-
-                command.Transaction = dagentKernel.Transaction;
+                ParameterConverter.SetParamters(command, parameters, dagentKernel.CreateDbParameter);                
 
                 object countValue = command.ExecuteScalar();
 
@@ -318,9 +314,7 @@ namespace Dagent.Models
             {
                 DbCommand command = dagentKernel.CreateDbCommand(selectSql);
 
-                ParameterConverter.SetParamters(command, parameters, dagentKernel.CreateDbParameter);
-
-                command.Transaction = this.dagentKernel.Transaction;
+                ParameterConverter.SetParamters(command, parameters, dagentKernel.CreateDbParameter);                
 
                 object val = command.ExecuteScalar();
 
