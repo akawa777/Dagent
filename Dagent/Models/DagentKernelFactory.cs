@@ -31,9 +31,17 @@ namespace Dagent.Models
             return CreateKernel(string.Empty, connectionString, providerName);
         }
 
-        protected virtual IDagentKernel CreateKernel(string connectionStringName, string connectionString, string providerName)
+        public virtual IDagentKernel CreateKernel(string connectionString, DbProviderFactory providerFactory)
         {
-            DbProviderFactory providerFactory = DbProviderFactories.GetFactory(providerName);
+            return CreateKernel(string.Empty, connectionString, string.Empty, providerFactory);
+        }
+
+        protected virtual IDagentKernel CreateKernel(string connectionStringName, string connectionString, string providerName, DbProviderFactory providerFactory = null)
+        {
+            if (providerFactory == null)
+            {
+                providerFactory = DbProviderFactories.GetFactory(providerName);
+            }
 
             DbConnection connection = providerFactory.CreateConnection();
             connection.ConnectionString = connectionString;

@@ -9,16 +9,62 @@ using System.Reflection;
 using Dagent.Models;
 using Dagent.Kernels;
 using Dagent.Library;
+using Dagent.Define;
 using System.Linq.Expressions;
+using System.IO;
 
 namespace Dagent
 {
     public class DagentDatabase : IDagentDatabase
     {
+        private static bool _defineTypeFind = false;
+        private static Type _dagentDefineType;
+
         public DagentDatabase()
-        {            
-            dagentKernel = dagentKernelFactory.CreateKernel();
-            _config = new Config(dagentKernel);
+        {
+            if (!_defineTypeFind)
+            {
+                string[] dlls = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.dll");
+
+                foreach(string dll in dlls)
+                {
+                    Assembly assembly = Assembly.LoadFrom(dll);
+
+                    foreach (Type type in assembly.GetTypes())
+                    {
+                        if (type.GetInterface(typeof(IDagentDefine).FullName) != null)
+                        {
+                            _dagentDefineType = type;
+                            _defineTypeFind = true;
+
+                            break;
+                        }
+                    }
+
+                    if (_defineTypeFind)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            if (_dagentDefineType == null)
+            {
+                dagentKernel = dagentKernelFactory.CreateKernel();
+                _config = new Config(dagentKernel);
+            }
+            else
+            {
+                IDagentDefine define = Activator.CreateInstance(_dagentDefineType) as IDagentDefine;
+
+                string connectionString = define.GetConnectionString();
+                DbProviderFactory factory = define.CreateDbProviderFactory();
+
+                dagentKernel = dagentKernelFactory.CreateKernel(connectionString, factory);
+                _config = new Config(dagentKernel);
+
+                define.SetConfig(_config);
+            }
         }
 
         public DagentDatabase(string connectionStringName)
@@ -30,6 +76,12 @@ namespace Dagent
         public DagentDatabase(string connectionString, string providerName)
         {         
             dagentKernel = dagentKernelFactory.CreateKernel(connectionString, providerName);
+            _config = new Config(dagentKernel);
+        }
+
+        public DagentDatabase(string connectionString, DbProviderFactory dbProviderFactory)
+        {
+            dagentKernel = dagentKernelFactory.CreateKernel(connectionString, dbProviderFactory);
             _config = new Config(dagentKernel);
         }
 
