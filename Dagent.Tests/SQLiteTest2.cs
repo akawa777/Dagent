@@ -338,13 +338,13 @@ namespace Dagent.Tests2
 
                 db.Command<Customer>("Customer", "CustomerId").Insert(customer);
 
-                scope.Commit();
+                scope.Complete();
 
                 customer.Name = "Buchi-nyan";
 
                 db.Command<Customer>("Customer", "CustomerId").Update(customer);
 
-                scope.Rollback();
+                scope.Complete();
             }
         }
 

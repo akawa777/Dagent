@@ -19,15 +19,18 @@ namespace Dagent
 
         protected virtual void BeginOpen()
         {
-            if (this.kernel.Connection.State == ConnectionState.Closed)
+            if (this.kernel.Connection.State == ConnectionState.Open)
             {
-                hasConnectionOpened = true;
+                isAlreadyOpen = true;                
+            }
+            else
+            {
                 this.kernel.Connection.Open();
             }
         }
 
         protected IDagentKernel kernel;
-        protected bool hasConnectionOpened = false;
+        protected bool isAlreadyOpen = false;
 
         public virtual void Dispose()
         {
@@ -36,7 +39,7 @@ namespace Dagent
 
         protected virtual void BeginClose()
         {
-            if (hasConnectionOpened && this.kernel.Connection.State == ConnectionState.Open)
+            if (!isAlreadyOpen)
             {
                 this.kernel.Connection.Close();
             }

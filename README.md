@@ -41,6 +41,6 @@ The performance tests are same test as the [Dapper](https://github.com/StackExch
 ### Result of Dapper performance test
 ![Alt Text](https://github.com/akawa777/Dagent/blob/master/resultOfPerformanceTest.png)
 ## Pure POCO
-Dagent Keep the POCO. Your class does not need to inherit class or put attribute. And is not dependent on sql and table.
+Dagent Keep the POCO. Your Class does not need to inherit Class or put Attribute. And is not dependent on SQL and TABLE.
 ## License
 The MIT License (MIT)

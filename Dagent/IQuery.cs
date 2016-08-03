@@ -15,14 +15,16 @@ namespace Dagent
         T Single();
         List<T> List();        
         List<T> Page(int pageNo, int noPerPage, out int count);
+        IEnumerable<T> EnumerateList();
+        IEnumerable<T> EnumeratePage(int pageNo, int noPerPage, out int count);
 
-        IQuery<T> Create(Func<T> create);
+        IQuery<T> Create(Func<ICurrentRow, T> create);
         IQuery<T> Unique(params string[] columnNames);
         IQuery<T> Prefix(string prefixColumnName);
         IQuery<T> Parameters(params Parameter[] parameters);                
         IQuery<T> Parameters(object parameters);        
         IQuery<T> Each(Action<T, ICurrentRow> mapAction);
-        IQuery<T> Auto(bool autoMapping);        
+        IQuery<T> AutoMapping(bool autoMapping);        
 
         IQuery<T> Ignore(params Expression<Func<T, object>>[] ignoreProperties);
         IQuery<T> IgnoreCase(bool ignore);
@@ -34,7 +36,7 @@ namespace Dagent
         V Scalar<V>();
         void Execute();
 
-        IQuery Each(Action<ICurrentRow> mapAction);
+        IQuery Each(Action<IBaseRow> mapAction);
         IQuery Unique(params string[] columnNames);        
         IQuery Parameters(params Parameter[] parameters);
         IQuery Parameters(object parameters);        

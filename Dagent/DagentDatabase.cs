@@ -108,8 +108,10 @@ namespace Dagent
         {
             using (ConnectionScope connectionScope = new ConnectionScope(this.dagentKernel))
             {
-                DbCommand command = dagentKernel.CreateDbCommand(sql, ParameterConverter.GetKeyValuePairs(parameters));     
-                command.Transaction = this.dagentKernel.Transaction;
+                DbCommand command = dagentKernel.CreateDbCommand(sql);
+
+                ParameterConverter.SetParamters(command, parameters, dagentKernel.CreateDbParameter);
+                
                 return command.ExecuteNonQuery();
             }
         }
@@ -118,8 +120,10 @@ namespace Dagent
         {
             using (ConnectionScope connectionScope = new ConnectionScope(this.dagentKernel))
             {                
-                DbCommand command = dagentKernel.CreateDbCommand(sql, ParameterConverter.GetKeyValuePairs(parameters));
-                command.Transaction = this.dagentKernel.Transaction;
+                DbCommand command = dagentKernel.CreateDbCommand(sql);
+
+                ParameterConverter.SetParamters(command, parameters, dagentKernel.CreateDbParameter);
+                
                 return command.ExecuteScalar();
             }
         }
@@ -128,8 +132,9 @@ namespace Dagent
         {
             using (ConnectionScope connectionScope = new ConnectionScope(this.dagentKernel))
             {
-                DbCommand command = dagentKernel.CreateDbCommand(selectSql, ParameterConverter.GetKeyValuePairs(parameters));
-                command.Transaction = this.dagentKernel.Transaction;
+                DbCommand command = dagentKernel.CreateDbCommand(selectSql);
+
+                ParameterConverter.SetParamters(command, parameters, dagentKernel.CreateDbParameter);                
 
                 DbDataAdapter dataAdapter = dagentKernel.ProviderFactory.CreateDataAdapter();
                 dataAdapter.SelectCommand = command;
@@ -142,8 +147,9 @@ namespace Dagent
         {
             using (ConnectionScope connectionScope = new ConnectionScope(this.dagentKernel))
             {
-                DbCommand command = dagentKernel.CreateDbCommand(selectSql, ParameterConverter.GetKeyValuePairs(parameters));
-                command.Transaction = this.dagentKernel.Transaction;                
+                DbCommand command = dagentKernel.CreateDbCommand(selectSql);
+
+                ParameterConverter.SetParamters(command, parameters, dagentKernel.CreateDbParameter);                
 
                 DbDataAdapter dataAdapter = dagentKernel.ProviderFactory.CreateDataAdapter();
                 dataAdapter.SelectCommand = command;
@@ -162,8 +168,9 @@ namespace Dagent
 
         public virtual DbDataReader ExecuteReader(CommandBehavior commandBehavior, string selectSql, params Parameter[] parameters)
         {
-            DbCommand command = dagentKernel.CreateDbCommand(selectSql, ParameterConverter.GetKeyValuePairs(parameters));
-            command.Transaction = this.dagentKernel.Transaction;
+            DbCommand command = dagentKernel.CreateDbCommand(selectSql);
+
+            ParameterConverter.SetParamters(command, parameters, dagentKernel.CreateDbParameter);            
 
             return command.ExecuteReader(commandBehavior);
         }
@@ -184,7 +191,6 @@ namespace Dagent
             
             if (dagentKernel.OnlyTableName(tableNameOrSelectSql))
             {
-
                 selectSql = dagentKernel.GetSelectSql(tableNameOrSelectSql, parameters == null || parameters.Length == 0 ? null : parameters.Select(x => x.Name).ToArray());
             }
             else

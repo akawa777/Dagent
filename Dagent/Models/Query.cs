@@ -35,9 +35,9 @@ namespace Dagent.Models
         private bool autoMapping = true;
         private Action<T, ICurrentRow> mapAction = (model, row) => { };
         private bool ignoreCase = false;
-        private Func<T> create = () => Activator.CreateInstance<T>();
+        private Func<ICurrentRow, T> create = row => Activator.CreateInstance<T>();
 
-        public IQuery<T> Create(Func<T> create)
+        public IQuery<T> Create(Func<ICurrentRow, T> create)
         {
             this.create = create;
 
@@ -49,26 +49,41 @@ namespace Dagent.Models
             using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel))
             {
                 count = Count();
-                return List((pageNo) * noPerPage, noPerPage).ToList();
+                return Fetch((pageNo) * noPerPage, noPerPage).ToList();
             }            
         }
 
+        public virtual IEnumerable<T> EnumerateList()
+        {
+            return new Enumerable<T>(Fetch(0, 0));
+        }
+
+        public virtual IEnumerable<T> EnumeratePage(int pageNo, int noPerPage, out int count)
+        {
+            using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel))
+            {
+                count = Count();
+                return new Enumerable<T>(Fetch((pageNo) * noPerPage, noPerPage));
+            }   
+        }
+
         public virtual List<T> List()
-        {            
-            return List(0, 0).ToList();
+        {
+            return Fetch(0, 0).ToList();
         }
 
         public virtual T Single()
         {
-            return List(0, 1).FirstOrDefault();
+            return Fetch(0, 1).FirstOrDefault();
         }
         
-        protected virtual IEnumerable<T> List(int sliceIndex, int sliceNo)
+        protected virtual IEnumerable<T> Fetch(int sliceIndex, int sliceNo)
         {
             using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel))
             {
-                DbCommand command = dagentKernel.CreateDbCommand(selectSql, ParameterConverter.GetKeyValuePairs(this.parameters));
-                command.Transaction = dagentKernel.Transaction;
+                DbCommand command = dagentKernel.CreateDbCommand(selectSql);
+
+                ParameterConverter.SetParamters(command, parameters, dagentKernel.CreateDbParameter);                
 
                 List<T> models = new List<T>();
 
@@ -83,9 +98,9 @@ namespace Dagent.Models
                     CurrentRow prevRow = null;                                        
 
                     bool firstRow = true;
-                    bool canYeld = sliceNo == 0 ? true : false;                    
+                    bool canYeld = sliceNo == 0 ? true : false;
 
-                    List<CurrentRow> currentRows = new List<CurrentRow>();
+                    List<CurrentRow> currentRows = new List<CurrentRow>();                    
 
                     T model = null;
 
@@ -94,9 +109,9 @@ namespace Dagent.Models
                     while (reader.Read())
                     {
                         if (firstRow)
-                        {
-                            model = create();
-                            currentRow = new CurrentRow(reader);                            
+                        {                            
+                            currentRow = new CurrentRow(reader);
+                            model = create(currentRow);
                             firstRow = false;                            
                         }
                         else
@@ -111,8 +126,11 @@ namespace Dagent.Models
                             
                             if (canYeld && requestNewModel)
                             {
-                                yield return GetModel(model, currentRows);
-                                currentRows = new List<CurrentRow>();
+                                yield return model;
+
+                                // for iterator
+                                //yield return GetModel(validColumnNames, prefixColumnName, columnNamePropertyMap, ignoreCase, currentRows);
+                                //currentRows = new List<CurrentRow>();
                             }
                         }
 
@@ -132,16 +150,21 @@ namespace Dagent.Models
                             }
                         }
 
-                        currentRows.Add(currentRow);                        
+                        currentRows.Add(currentRow);
 
                         if (requestNewModel)
                         {
-                            model = create();
+                            model = create(currentRow);
 
                             if (autoMapping)
                             {
                                 ModelMapper<T>.Map(model, currentRow, validColumnNames, prefixColumnName, columnNamePropertyMap, ignoreCase);
                             }
+                        }
+
+                        if (mapAction != null)
+                        {
+                            mapAction(model, currentRow);
                         }
 
                         if (sliceNo != 0 && sliceNo == sliceCount)
@@ -152,20 +175,43 @@ namespace Dagent.Models
 
                     if (model != null)
                     {
-                        yield return GetModel(model, currentRows);
+                        yield return model;
                     }
+
+                    // for iterator
+                    //if (currentRows != null)
+                    //{
+                    //    yield return GetModel(validColumnNames, prefixColumnName, columnNamePropertyMap, ignoreCase, currentRows);
+                    //}
+
                 }
             }
         }
 
-        private T GetModel (T model, List<CurrentRow> currentRows)
+        // for iterator
+        private T GetModel (string[] validColumnNames, string prefixColumnName, ColumnNamePropertyMap columnNamePropertyMap, bool ignoreCase, List<CurrentRow> currentRows)
         {
-            if (mapAction != null)
+            T model = null;
+            bool isFirstRow = true;
+
+            foreach (CurrentRow currentRow in currentRows)
             {
-                foreach (CurrentRow currentRow in currentRows)
+                if (isFirstRow)
                 {
-                    mapAction(model, currentRow);    
-                }   
+                    model = create(currentRow);
+
+                    if (autoMapping)
+                    {
+                        ModelMapper<T>.Map(model, currentRow, validColumnNames, prefixColumnName, columnNamePropertyMap, ignoreCase);
+                    }
+
+                    isFirstRow = false;
+                }
+
+                if (mapAction != null)
+                {
+                    mapAction(model, currentRow);
+                }
             }
 
             return model;
@@ -184,7 +230,7 @@ namespace Dagent.Models
             return this;
         }
 
-        public virtual IQuery<T> Auto(bool autoMapping)
+        public virtual IQuery<T> AutoMapping(bool autoMapping)
         {
             this.autoMapping = autoMapping;
             return this;
@@ -245,13 +291,9 @@ namespace Dagent.Models
         {
             using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel))
             {
-                DbCommand command = dagentKernel.CreateDbCommand(dagentKernel.GetSelectCountSql(selectSql, this.uniqueColumnNames), ParameterConverter.GetKeyValuePairs(this.parameters));
-                command.Transaction = dagentKernel.Transaction;
+                DbCommand command = dagentKernel.CreateDbCommand(dagentKernel.GetSelectCountSql(selectSql, this.uniqueColumnNames));
 
-                foreach (Parameter parameter in this.parameters)
-                {
-                    command.Parameters.Add(dagentKernel.CreateDbParameter(parameter.Name, parameter.Value));
-                }
+                ParameterConverter.SetParamters(command, parameters, dagentKernel.CreateDbParameter);                
 
                 object countValue = command.ExecuteScalar();
 
@@ -270,8 +312,9 @@ namespace Dagent.Models
         {
             using (ConnectionScope connectionScope = new ConnectionScope(this.dagentKernel))
             {
-                DbCommand command = dagentKernel.CreateDbCommand(selectSql, ParameterConverter.GetKeyValuePairs(parameters));
-                command.Transaction = this.dagentKernel.Transaction;
+                DbCommand command = dagentKernel.CreateDbCommand(selectSql);
+
+                ParameterConverter.SetParamters(command, parameters, dagentKernel.CreateDbParameter);                
 
                 object val = command.ExecuteScalar();
 
@@ -326,7 +369,7 @@ namespace Dagent.Models
             List();
         }
 
-        public IQuery Each(Action<ICurrentRow> mapAction)
+        public IQuery Each(Action<IBaseRow> mapAction)
         {
             Action<T, ICurrentRow> action = (obj, row) => mapAction(row);
             Each(action);

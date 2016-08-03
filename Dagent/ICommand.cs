@@ -14,7 +14,9 @@ namespace Dagent
         int Delete(T entity);        
         
         ICommand<T> Map(Action<IUpdateRow, T> mapAction);
-        ICommand<T> Auto(bool autoMapping);
+        ICommand<T> AutoMapping(bool autoMapping);
+        ICommand<T> Where(string where, params Parameter[] parameters);
+        ICommand<T> Where(string where, object parameters);
 
         ICommand<T> Ignore(params Expression<Func<T, object>>[] ignoreProperties);
     }

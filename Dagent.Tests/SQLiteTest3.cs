@@ -152,7 +152,7 @@ namespace Dagent.Tests3
                     db.Command<SubEntity3>("SubEntity3", "SubEntity3Id").Insert(se3);
                 }
 
-                scope.Commit();
+                scope.Complete();
             }
         }
 
@@ -187,7 +187,7 @@ namespace Dagent.Tests3
                     SubEntity3
                 on
                     Entity3.SubEntity3Id = SubEntity3.SubEntity3Id ")
-                .Create(() => new Entity1(new TestService()))
+                .Create(row => new Entity1(new TestService()))
                 .Unique("Entity1Id")
                 .Each((e1, row) =>
                 {

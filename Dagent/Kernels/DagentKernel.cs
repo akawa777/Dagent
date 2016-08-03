@@ -49,6 +49,7 @@ namespace Dagent.Kernels
             if (type == null) return null;
 
             DbType dbType;
+
             if (typeMap.TryGetValue(type, out dbType))
             {
                 return dbType;
@@ -136,10 +137,11 @@ namespace Dagent.Kernels
             }
         }
 
-        public virtual string GetInsertSql(string tableName, params string[] valueParameters)
+        public virtual string GetInsertSql(string tableName, string[] whereParameters, params string[] valueParameters)
         {
             StringBuilder names = new StringBuilder();
             StringBuilder values = new StringBuilder();
+            StringBuilder where = new StringBuilder();
 
             if (valueParameters != null && valueParameters.Length > 0)
             {
@@ -158,7 +160,23 @@ namespace Dagent.Kernels
                 }
             }
 
-            StringBuilder sql = new StringBuilder(string.Format("insert into {0} ({1}) values({2})", tableName, names.ToString(), values.ToString()));
+            if (whereParameters != null && whereParameters.Length > 0)
+            {
+                for (int i = 0; i < whereParameters.Length; i++)
+                {
+                    if (i == 0)
+                    {
+                        where.Append(whereParameters[i] + " = @" + whereParameters[i]);
+                    }
+                    else
+                    {
+                        where.Append(" and " + whereParameters[i] + " = @" + whereParameters[i]);
+                    }
+                }
+            }
+
+            //StringBuilder sql = new StringBuilder(string.Format("insert into {0} ({1}) values({2})", tableName, names.ToString(), values.ToString()));
+            StringBuilder sql = new StringBuilder(string.Format("insert into {0} ({1}) select {2} where not exists (select {3} from {0} where {4})", tableName, names.ToString(), values.ToString(), whereParameters[0], where.ToString()));
 
             return sql.ToString();
         }
@@ -239,34 +257,29 @@ namespace Dagent.Kernels
             }
         }
 
-        public virtual DbParameter CreateDbParameter(string name, object value)
+        public virtual DbParameter CreateDbParameter(DbParameter parameter)
         {
             DbParameter dbParameter = ProviderFactory.CreateParameter();
-            dbParameter.ParameterName = ParameterPrefix + name;
-            dbParameter.Value = value;
 
-            DbType? dbType = GetDbType(value);
+            dbParameter.ParameterName = ParameterPrefix + parameter.ParameterName;
+            dbParameter.Value = parameter.Value;
+
+            DbType? dbType = GetDbType(parameter.Value);
             if (dbType.HasValue) dbParameter.DbType = dbType.Value;
 
             return dbParameter;
         }
 
 
-        public virtual DbCommand CreateDbCommand(string sql, KeyValuePair<string, object>[] parameters)
+        public virtual DbCommand CreateDbCommand(string sql)
         {
             DbCommand command = ProviderFactory.CreateCommand();
             command.Connection = Connection;
 
+            command.Transaction = Transaction == null ? null : Transaction;            
+
             command.CommandText = sql;
-            command.CommandTimeout = CommandTimeout;
-
-            for (int i = 0; i < parameters.Length; i++)
-            {
-                DbParameter parameter = CreateDbParameter(parameters[i].Key, parameters[i].Value);
-                if (parameter == null) continue;
-
-                command.Parameters.Add(parameter);
-            }
+            command.CommandTimeout = CommandTimeout;            
 
             return command;
         }
@@ -280,5 +293,8 @@ namespace Dagent.Kernels
             get;
             set;
         }
+
+
+        public bool Rollbakced { get; set; }
     }
 }

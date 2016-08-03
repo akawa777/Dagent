@@ -31,73 +31,86 @@ namespace Dagent.Models
         private string[] primaryKeys;
         private bool autoMapping = true;
         private Action<IUpdateRow, T> mapAction = (row, model) => { };
+        private string where = string.Empty;
+        private Parameter[] parameters;
 
         protected virtual int Execute(DataRowState rowState, T entity)
-        {
-            using (ConnectionScope connectionScope = new ConnectionScope(dagentKernel))
+        {   
+            Dictionary<string, object> columnValueMap = new Dictionary<string, object>();
+
+            if (this.autoMapping)
             {
-                Dictionary<string, object> columnValueMap = new Dictionary<string, object>();
-
-                if (this.autoMapping)
-                {
-                    foreach (var property in typeof(T).GetProperties())
-                    {                    
-                        if (!property.CanRead)
-                        {
-                            continue;
-                        }
-
-                        DbType? dbType = dagentKernel.GetDbType(property.PropertyType);
-                        string columnName;
-                        if (dbType.HasValue && columnNamePropertyMap.TryGetColumnName<T>(property, out columnName))
-                        {
-                            columnValueMap[columnName] = DynamicMethodBuilder<T>.CreateGetMethod(property)(entity);
-                        }
-                    }
-                }
-
-                UpdateRow updateRow = new UpdateRow(columnValueMap);
-
-                this.mapAction(updateRow, entity);
-
-                List<KeyValuePair<string, object>> primaryKeyParameters = new List<KeyValuePair<string, object>>();
-
-                foreach (string key in this.primaryKeys)
-                {
-                    primaryKeyParameters.Add(new KeyValuePair<string, object>(key, updateRow[key]));
-                }
-
-                List<KeyValuePair<string, object>> valueParameters = new List<KeyValuePair<string, object>>();
-
-                foreach (string columnName in updateRow.ColumnNames)
-                {
-                    object value = updateRow[columnName];
-                    if (value == null)
+                foreach (var property in typeof(T).GetProperties())
+                {                    
+                    if (!property.CanRead)
                     {
-                        value = DBNull.Value;
+                        continue;
                     }
-                    valueParameters.Add(new KeyValuePair<string, object>(columnName, value));
+
+                    DbType? dbType = dagentKernel.GetDbType(property.PropertyType);
+                    string columnName;
+                    if (dbType.HasValue && columnNamePropertyMap.TryGetColumnName<T>(property, out columnName))
+                    {
+                        columnValueMap[columnName] = DynamicMethodBuilder<T>.CreateGetMethod(property)(entity);
+                    }
                 }
+            }
 
-                string sql = "";
+            UpdateRow updateRow = new UpdateRow(columnValueMap);
 
-                if (rowState == DataRowState.Added)
+            this.mapAction(updateRow, entity);
+
+            List<Parameter> valueParameters = new List<Parameter>();
+
+            foreach (string columnName in updateRow.ColumnNames)
+            {
+                object value = updateRow[columnName];
+
+                if (value == null)
                 {
-                    sql = dagentKernel.GetInsertSql(tableName, updateRow.ColumnNames);
+                    value = DBNull.Value;
                 }
-                else if (rowState == DataRowState.Modified)
-                {
-                    sql = dagentKernel.GetUpdateSql(tableName, this.primaryKeys, updateRow.ColumnNames);
-                }
-                else if (rowState == DataRowState.Deleted)
-                {
-                    sql = dagentKernel.GetDeleteSql(tableName, this.primaryKeys);
-                }
+                
+                valueParameters.Add(new Parameter(columnName, value));
+            }
 
-                DbCommand command = dagentKernel.CreateDbCommand(sql, valueParameters.ToArray());
-                command.Transaction = dagentKernel.Transaction;
+            if (parameters != null)
+            {
+                foreach (Parameter parameter in parameters)
+                {
+                    valueParameters.Add(parameter);
+                }
+            }
 
-                return command.ExecuteNonQuery();
+            string sql = "";
+
+            if (rowState == DataRowState.Added)
+            {
+                sql = dagentKernel.GetInsertSql(tableName, this.primaryKeys, updateRow.ColumnNames);
+            }
+            else if (rowState == DataRowState.Modified)
+            {
+                sql = dagentKernel.GetUpdateSql(tableName, this.primaryKeys, updateRow.ColumnNames) 
+                    + (string.IsNullOrEmpty(this.where) ? string.Empty : string.Format(" and ({0}) ", where));
+                    
+            }
+            else if (rowState == DataRowState.Deleted)
+            {
+                sql = dagentKernel.GetDeleteSql(tableName, this.primaryKeys)
+                    + (string.IsNullOrEmpty(this.where) ? string.Empty : string.Format(" and ({0}) ", where));
+            }
+            
+            using (TransactionScope tarnsactionScope = new TransactionScope(dagentKernel))
+            {
+                DbCommand command = dagentKernel.CreateDbCommand(sql);
+
+                ParameterConverter.SetParamters(command, valueParameters.ToArray(), dagentKernel.CreateDbParameter);
+
+                int rtn = command.ExecuteNonQuery();
+
+                tarnsactionScope.Complete();
+
+                return rtn;
             }
         }        
 
@@ -130,7 +143,7 @@ namespace Dagent.Models
             return this;
         }
 
-        public virtual ICommand<T> Auto(bool autoMapping)
+        public virtual ICommand<T> AutoMapping(bool autoMapping)
         {
             this.autoMapping = autoMapping;
             return this;
@@ -141,6 +154,41 @@ namespace Dagent.Models
             foreach (var property in ignoreProperties)
             {
                 this.columnNamePropertyMap.IgnoreProperty<T>(ExpressionParser.GetPropertyInfo<T, object>(property));
+            }
+
+            return this;
+        }
+
+
+        public ICommand<T> Where(string where, params Parameter[] parameters)
+        {
+            this.where = where;
+
+            if (parameters == null)
+            {
+                this.parameters = new Parameter[0];
+            }
+            else
+            {
+                this.parameters = parameters;
+            }
+
+            return this;
+        }
+
+        public ICommand<T> Where(string where, object parameters)
+        {
+            this.where = where;
+
+            Parameter[] parameterItems = ParameterConverter.GetParameters(parameters);
+
+            if (parameterItems == null)
+            {
+                this.parameters = new Parameter[0];
+            }
+            else
+            {
+                this.parameters = parameterItems;
             }
 
             return this;

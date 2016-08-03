@@ -170,11 +170,29 @@ namespace Dagent.Tests
         }
 
         [TestMethod]
+        public void DagentTestForIterator()
+        {
+            IDagentDatabase database = new DagentDatabase("SQLite");
+
+            var customers = database.Query<Customer>("select * from customers").EnumerateList();
+
+            using (var scope = database.ConnectionScope())
+            {
+                foreach (var customer in customers)
+                {
+                    customer.CustomerPurchases = database.Query<CustomerPurchase>("select * from customerPurchases where customerId = @customerId", new { customerId = customer.customerId }).List();                    
+                }
+            }
+
+            ValidList(customers);
+        }
+
+        [TestMethod]
         public void DapperTest()
         {
             IDagentDatabase database = new DagentDatabase("SQLite");
 
-            var customers = database.Connection.Query<Customer>("select * from customers", null).ToList();
+            var customers = database.Connection.Query<Customer>("select * from customers", null);
 
             foreach (var customer in customers)
             {
@@ -190,6 +208,7 @@ namespace Dagent.Tests
             IDagentDatabase database = new DagentDatabase("SQLite");
             NPoco.IDatabase db = new NPoco.Database(database.Connection);
 
+            //var customers = db.Query<Customer>("select * from customers");
             var customers = db.Fetch<Customer>("select * from customers");
 
             foreach (var customer in customers)
@@ -382,7 +401,7 @@ namespace Dagent.Tests
                         c.customerId = cp.customerId                 
         	        order by 
                         c.customerId, cp.no")
-                .Auto(false)
+                .AutoMapping(false)
                 .Unique("customerId")
                 .Each((model, row) => {                    
                     model.customerId = row.Get<int>("customerId");
@@ -713,7 +732,7 @@ namespace Dagent.Tests
                         .Insert(business);
                 }
 
-                scope.Commit();
+                scope.Complete();
             }
 
             FetchForOneToOne();
@@ -875,7 +894,7 @@ namespace Dagent.Tests
             Assert.AreEqual(customer.customerId, registerdCustomer.customerId);
             Assert.AreEqual(customer.name, registerdCustomer.name);
 
-            ret = command.Auto(false).Map((row, model) => 
+            ret = command.AutoMapping(false).Map((row, model) => 
             {
                 row["customerId"] = model.customerId;
                 row["name"] = model.name;
@@ -934,7 +953,7 @@ namespace Dagent.Tests
                     database.ExequteNonQuery(string.Format("insert into business values ({0}, '{1}')", i.ToString(), "business_" + i.ToString()));
                 }
 
-                scope.Commit();
+                scope.Complete();
             }
         }
 
@@ -979,7 +998,7 @@ namespace Dagent.Tests
 
                 Assert.AreEqual(0, rtn1);
 
-                scope.Commit();
+                scope.Complete();
             }
 
             int rtn2 = database.ExequteNonQuery(sql);

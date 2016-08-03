@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using Dagent;
 using System.Reflection;
+using System.Data.Common;
 
 namespace Dagent.Library
 {
@@ -28,18 +29,19 @@ namespace Dagent.Library
             return new Parameter[0];
         }
 
-        public static KeyValuePair<string, object>[] GetKeyValuePairs(Parameter[] parameters)
+        public static void SetParamters(DbCommand command, Parameter[] parameters, Func<DbParameter, DbParameter> func)
         {
-            if (parameters == null) return new KeyValuePair<string, object>[0];
-
-            KeyValuePair<string, object>[] rtnKeyValueParis = new KeyValuePair<string, object>[parameters.Length];
-
-            for (int i = 0; i < parameters.Length; i++)
+            if (parameters != null)
             {
-                rtnKeyValueParis[i] = new KeyValuePair<string, object>(parameters[i].Name, parameters[i].Value);
-            }
+                foreach (Parameter parameter in parameters)
+                {
+                    IDbParamterCreator creator = (parameter as IDbParamterCreator);
 
-            return rtnKeyValueParis;
+                    DbParameter dbParamter = creator.CreateParameter(func);
+
+                    command.Parameters.Add(dbParamter);
+                }
+            }
         }
     }
 }
