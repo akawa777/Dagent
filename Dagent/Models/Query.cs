@@ -132,6 +132,11 @@ namespace Dagent.Models
                                 //yield return GetModel(validColumnNames, prefixColumnName, columnNamePropertyMap, ignoreCase, currentRows);
                                 //currentRows = new List<CurrentRow>();
                             }
+
+                            if (sliceNo != 0 && sliceNo == sliceCount && requestNewModel)
+                            {
+                                break;
+                            }
                         }
 
                         if (sliceNo != 0)
@@ -165,11 +170,6 @@ namespace Dagent.Models
                         if (mapAction != null)
                         {
                             mapAction(model, currentRow);
-                        }
-
-                        if (sliceNo != 0 && sliceNo == sliceCount)
-                        {
-                            break;
                         }
                     }
 
