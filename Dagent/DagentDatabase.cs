@@ -85,9 +85,16 @@ namespace Dagent
             _config = new Config(dagentKernel);
         }
 
-        public DagentDatabase(DbConnection connection)
+        public DagentDatabase(DbConnection connection) : this(connection, null)
+        {
+            
+        }
+
+        public DagentDatabase(DbConnection connection, DbTransaction transaction)
         {
             dagentKernel = dagentKernelFactory.CreateKernel(connection.ConnectionString, DbProviderFactories.GetFactory(connection));
+            dagentKernel.Transaction = transaction;
+
             _config = new Config(dagentKernel);
             Connection = connection;
         }
