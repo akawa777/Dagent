@@ -1,4 +1,4 @@
-<font color="Red">Maintenance is canceled. Please use FreestyleOrm.</font>
+# !! Maintenance is canceled. Please use FreestyleOrm. !!
 # Dagent
 Simple microORM for .NET. 
 
