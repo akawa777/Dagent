@@ -1,4 +1,4 @@
-# !! Maintenance is canceled. Please use [FreestyleOrm](https://github.com/akawa777/FreestyleOrm). !!
+# !! Maintenance is canceled. Next ORM is [FreestyleOrm](https://github.com/akawa777/FreestyleOrm). !!
 # Dagent
 Simple microORM for .NET. 
 
